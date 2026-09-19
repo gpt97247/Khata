@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useKhata } from '../context/useKhata';
 import type { Expense } from '../types';
+import { isCredit } from '../utils/transactions';
 import {
   XIcon, CalendarIcon, CreditCardIcon,
   PlusIcon
@@ -14,7 +15,7 @@ interface ExpenseFormModalProps {
 }
 
 const getInitialState = (initialData?: Expense | null, categories?: { id: string }[]) => ({
-  amount: initialData?.amount.toString() || '',
+  amount: initialData ? `${isCredit(initialData) ? '+' : ''}${initialData.amount}` : '',
   description: initialData?.description || '',
   categoryId: initialData?.categoryId || categories?.[0]?.id || '',
   tagIds: initialData?.tagIds || [],
@@ -51,7 +52,11 @@ export function ExpenseFormModal({ initialData, categories, tags, onClose }: Exp
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!amount || parseFloat(amount) <= 0) newErrors.amount = 'Enter a valid amount';
+    const normalizedAmount = amount.trim();
+    const numericAmount = Number(normalizedAmount.replace(/^\+/, ''));
+    if (!/^\+?(?:\d+|\d*\.\d{1,2})$/.test(normalizedAmount) || numericAmount <= 0) {
+      newErrors.amount = 'Enter a valid amount, e.g. 100 or +100';
+    }
     if (!description.trim()) newErrors.description = 'Description is required';
     if (!categoryId) newErrors.category = 'Select a category';
     setErrors(newErrors);
@@ -63,7 +68,8 @@ export function ExpenseFormModal({ initialData, categories, tags, onClose }: Exp
     if (!validate()) return;
 
     const data = {
-      amount: parseFloat(amount),
+      amount: Number(amount.trim().replace(/^\+/, '')),
+      transactionType: amount.trim().startsWith('+') ? 'credit' as const : 'debit' as const,
       description: description.trim(),
       categoryId,
       tagIds,
@@ -120,17 +126,20 @@ export function ExpenseFormModal({ initialData, categories, tags, onClose }: Exp
               <div className="relative input-icon">
                 <CreditCardIcon className="icon-sm text-dim" />
                 <input
-                  type="number"
-                  step="0.01"
+                  type="text"
+                  inputMode="decimal"
                   value={amount}
                   onChange={e => { setAmount(e.target.value); if (errors.amount) setErrors(p => ({ ...p, amount: '' })); }}
                   className="input pl-10"
-                  placeholder="0.00"
+                  placeholder="100 or +100"
                   autoFocus
                   aria-invalid={!!errors.amount}
                   aria-describedby={errors.amount ? 'amount-error' : undefined}
                 />
               </div>
+              <p className={`form-hint ${amount.trim().startsWith('+') ? 'text-success' : ''}`}>
+                {amount.trim().startsWith('+') ? 'Credit: this will not count as spending.' : 'Debit by default. Prefix + to record a credit.'}
+              </p>
               {errors.amount && <p id="amount-error" className="form-error" role="alert"><XIcon className="icon-xs" /> {errors.amount}</p>}
             </div>
             <div>

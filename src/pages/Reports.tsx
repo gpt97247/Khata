@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useKhata } from '../context/useKhata';
 import { Layout } from '../components/Layout';
 import { formatMonth, getMonthKey, getMonthRange } from '../utils/date';
+import { isCredit, spendingAmount } from '../utils/transactions';
 import { ChevronLeftIcon, ChevronRightIcon, DownloadIcon, TrendingUpIcon, ArrowDownIcon, PieChartIcon, BarChartIcon } from '../components/Icons';
 
 export function Reports() {
@@ -17,26 +18,33 @@ export function Reports() {
     });
   }, [expenses, selectedMonth]);
 
-  const total = monthExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const total = monthExpenses.reduce((sum, expense) => sum + spendingAmount(expense), 0);
   const daysInMonth = new Date(parseInt(selectedMonth.split('-')[0]), parseInt(selectedMonth.split('-')[1]), 0).getDate();
   const dailyAvg = daysInMonth > 0 ? total / daysInMonth : 0;
   const expenseCount = monthExpenses.length;
 
   const byCategory = useMemo(() => {
     const result: Record<string, number> = {};
-    monthExpenses.forEach(e => { result[e.categoryId] = (result[e.categoryId] || 0) + e.amount; });
+    monthExpenses.filter(expense => !isCredit(expense)).forEach(e => {
+      result[e.categoryId] = (result[e.categoryId] || 0) + e.amount;
+    });
     return result;
   }, [monthExpenses]);
 
   const byTag = useMemo(() => {
     const result: Record<string, number> = {};
-    monthExpenses.forEach(e => { e.tagIds.forEach(tagId => { result[tagId] = (result[tagId] || 0) + e.amount; }); });
+    monthExpenses.filter(expense => !isCredit(expense)).forEach(e => {
+      e.tagIds.forEach(tagId => { result[tagId] = (result[tagId] || 0) + e.amount; });
+    });
     return result;
   }, [monthExpenses]);
 
   const dailyTotals = useMemo(() => {
     const result: Record<string, number> = {};
-    monthExpenses.forEach(e => { const day = e.date.split('T')[0]; result[day] = (result[day] || 0) + e.amount; });
+    monthExpenses.filter(expense => !isCredit(expense)).forEach(e => {
+      const day = e.date.split('T')[0];
+      result[day] = (result[day] || 0) + e.amount;
+    });
     return result;
   }, [monthExpenses]);
 

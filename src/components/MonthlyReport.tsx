@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import type { Expense, Category, Tag } from '../types';
 import { getAvailableMonths, getMonthKey, formatMonth, getMonthRange } from '../utils/date';
+import { isCredit, spendingAmount } from '../utils/transactions';
 
 interface MonthlyReportProps {
   expenses: Expense[];
@@ -20,11 +21,11 @@ export function MonthlyReport({ expenses, categories, tags }: MonthlyReportProps
     });
   }, [expenses, selectedMonth]);
 
-  const total = monthExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const total = monthExpenses.reduce((sum, expense) => sum + spendingAmount(expense), 0);
 
   const byCategory = useMemo(() => {
     const result: Record<string, number> = {};
-    monthExpenses.forEach(e => {
+    monthExpenses.filter(expense => !isCredit(expense)).forEach(e => {
       result[e.categoryId] = (result[e.categoryId] || 0) + e.amount;
     });
     return result;
@@ -32,7 +33,7 @@ export function MonthlyReport({ expenses, categories, tags }: MonthlyReportProps
 
   const byTag = useMemo(() => {
     const result: Record<string, number> = {};
-    monthExpenses.forEach(e => {
+    monthExpenses.filter(expense => !isCredit(expense)).forEach(e => {
       e.tagIds.forEach(tagId => {
         result[tagId] = (result[tagId] || 0) + e.amount;
       });
@@ -42,7 +43,7 @@ export function MonthlyReport({ expenses, categories, tags }: MonthlyReportProps
 
   const dailyTotals = useMemo(() => {
     const result: Record<string, number> = {};
-    monthExpenses.forEach(e => {
+    monthExpenses.filter(expense => !isCredit(expense)).forEach(e => {
       const day = e.date.split('T')[0];
       result[day] = (result[day] || 0) + e.amount;
     });

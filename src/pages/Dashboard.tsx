@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useKhata } from '../context/useKhata';
 import { formatMonth, getMonthKey, getMonthRange } from '../utils/date';
+import { isCredit, spendingAmount, transactionAmountLabel } from '../utils/transactions';
 import { Layout } from '../components/Layout';
 import { PlusIcon, TrendingUpIcon, ArrowDownIcon, ClockIcon, TargetIcon } from '../components/Icons';
 
@@ -23,12 +24,12 @@ export function Dashboard() {
       return d >= start && d <= end;
     });
 
-    const total = monthExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const total = monthExpenses.reduce((sum, expense) => sum + spendingAmount(expense), 0);
     const daysInMonth = new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate();
     const dailyAvg = daysInMonth > 0 ? total / daysInMonth : 0;
 
     const byCategory: Record<string, number> = {};
-    monthExpenses.forEach(e => {
+    monthExpenses.filter(expense => !isCredit(expense)).forEach(e => {
       byCategory[e.categoryId] = (byCategory[e.categoryId] || 0) + e.amount;
     });
     const topCatEntry = Object.entries(byCategory).sort((a, b) => b[1] - a[1])[0];
@@ -49,7 +50,7 @@ export function Dashboard() {
       return d >= start && d <= end;
     });
     const byCategory: Record<string, number> = {};
-    monthExpenses.forEach(e => {
+    monthExpenses.filter(expense => !isCredit(expense)).forEach(e => {
       byCategory[e.categoryId] = (byCategory[e.categoryId] || 0) + e.amount;
     });
     return Object.entries(byCategory)
@@ -64,7 +65,7 @@ export function Dashboard() {
       return d >= start && d <= end;
     });
     const byDay: Record<string, number> = {};
-    monthExpenses.forEach(e => {
+    monthExpenses.filter(expense => !isCredit(expense)).forEach(e => {
       const day = e.date.split('T')[0];
       byDay[day] = (byDay[day] || 0) + e.amount;
     });
@@ -164,7 +165,9 @@ export function Dashboard() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-lg">₹{expense.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+                      <p className={`font-semibold text-lg ${isCredit(expense) ? 'text-success' : 'text-danger'}`}>
+                        {transactionAmountLabel(expense)}
+                      </p>
                       <p className="text-xs text-dim">{new Date(expense.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', weekday: 'short' })}</p>
                     </div>
                   </div>

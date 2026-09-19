@@ -14,6 +14,8 @@ export interface Category {
 export interface Expense {
   id: string;
   amount: number;
+  /** Missing on older records means debit, preserving existing data. */
+  transactionType?: 'debit' | 'credit';
   description: string;
   categoryId: string;
   tagIds: string[];

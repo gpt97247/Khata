@@ -4,6 +4,7 @@ import { Layout } from '../components/Layout';
 import { ExpenseFormModal } from '../components/ExpenseFormModal';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
 import { formatDate } from '../utils/date';
+import { isCredit, spendingAmount, transactionAmountLabel } from '../utils/transactions';
 import {
   PlusIcon, SearchIcon, FilterIcon, EditIcon, TrashIcon,
   CreditCardIcon,
@@ -36,15 +37,16 @@ export function Expenses() {
 
   const sortedExpenses = useMemo(() => {
     return [...filteredExpenses].sort((a, b) => {
-      let aVal = a[sortConfig.key as keyof typeof a];
-      let bVal = b[sortConfig.key as keyof typeof b];
       if (sortConfig.key === 'date') {
-        aVal = new Date(a.date).getTime();
-        bVal = new Date(b.date).getTime();
+        const result = new Date(a.date).getTime() - new Date(b.date).getTime();
+        return sortConfig.direction === 'asc' ? result : -result;
       }
-      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
-      return 0;
+      if (sortConfig.key === 'amount') {
+        const result = a.amount - b.amount;
+        return sortConfig.direction === 'asc' ? result : -result;
+      }
+      const result = a.description.localeCompare(b.description);
+      return sortConfig.direction === 'asc' ? result : -result;
     });
   }, [filteredExpenses, sortConfig]);
 
@@ -60,7 +62,7 @@ export function Expenses() {
 
   const sortedDates = useMemo(() => Object.keys(groupedExpenses).sort((a, b) => new Date(b).getTime() - new Date(a).getTime()), [groupedExpenses]);
 
-  const totalAmount = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalAmount = filteredExpenses.reduce((sum, expense) => sum + spendingAmount(expense), 0);
 
   const handleEdit = (expense: typeof expenses[0]) => {
     setEditingExpense(expense);
@@ -225,7 +227,7 @@ export function Expenses() {
                 <tbody>
                   {sortedDates.map(dateKey => {
                     const dayExpenses = groupedExpenses[dateKey];
-                    const dayTotal = dayExpenses.reduce((sum, e) => sum + e.amount, 0);
+                    const dayTotal = dayExpenses.reduce((sum, expense) => sum + spendingAmount(expense), 0);
                     return (
                       <React.Fragment key={dateKey}>
                         <tr className="bg-bg/50">
@@ -263,7 +265,9 @@ export function Expenses() {
                                   )}
                                 </div>
                               </td>
-                              <td className="text-right font-semibold">₹{expense.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                              <td className={`text-right font-semibold ${isCredit(expense) ? 'text-success' : 'text-danger'}`}>
+                                {transactionAmountLabel(expense)}
+                              </td>
                               <td>
                                 <div className="dropdown">
                                   <button

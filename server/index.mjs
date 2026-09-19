@@ -34,6 +34,7 @@ const expenseSchema = new mongoose.Schema({
   userId: { type: String, required: true, index: true },
   id: { type: String, required: true },
   amount: { type: Number, required: true, min: 0.01 },
+  transactionType: { type: String, enum: ['debit', 'credit'], default: 'debit' },
   description: { type: String, required: true, trim: true, maxlength: 200 },
   categoryId: { type: String, required: true },
   tagIds: { type: [String], default: [] },
@@ -134,7 +135,12 @@ app.post('/api/expenses', async (req, res, next) => {
   try {
     const payload = req.body;
     if (!requireFields(res, payload, ['id', 'amount', 'description', 'categoryId', 'date', 'createdAt'])) return;
-    const expense = await Expense.create({ ...payload, userId: req.userId, tagIds: Array.isArray(payload.tagIds) ? payload.tagIds : [] });
+    const expense = await Expense.create({
+      ...payload,
+      userId: req.userId,
+      transactionType: payload.transactionType === 'credit' ? 'credit' : 'debit',
+      tagIds: Array.isArray(payload.tagIds) ? payload.tagIds : [],
+    });
     res.status(201).json(publicFields(expense.toObject()));
   } catch (error) { next(error); }
 });
@@ -145,7 +151,13 @@ app.put('/api/expenses/:id', async (req, res, next) => {
     if (!requireFields(res, payload, ['amount', 'description', 'categoryId', 'date', 'createdAt'])) return;
     const expense = await Expense.findOneAndUpdate(
       { userId: req.userId, id: getId(req) },
-      { ...payload, id: getId(req), userId: req.userId, tagIds: Array.isArray(payload.tagIds) ? payload.tagIds : [] },
+      {
+        ...payload,
+        id: getId(req),
+        userId: req.userId,
+        transactionType: payload.transactionType === 'credit' ? 'credit' : 'debit',
+        tagIds: Array.isArray(payload.tagIds) ? payload.tagIds : [],
+      },
       { new: true, runValidators: true },
     ).lean();
     if (!expense) return res.status(404).json({ message: 'Expense not found' });
