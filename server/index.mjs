@@ -195,7 +195,9 @@ if (!mongoUri) {
 }
 
 mongoose.connect(mongoUri)
-  .then(() => app.listen(port, () => console.log(`Khata API listening on http://localhost:${port}`)))
+  .then(() => app.listen(port, '0.0.0.0', () => {
+    console.log(`Khata API listening on port ${port}`);
+  }))
   .catch(error => {
     console.error('Could not connect to MongoDB:', error.message);
     process.exit(1);
