@@ -49,3 +49,21 @@ export function updateExpense(updated: Expense): void {
   const expenses = getExpenses().map(e => e.id === updated.id ? updated : e);
   saveExpenses(expenses);
 }
+
+export function updateCategory(updated: Category): void {
+  const categories = getCategories().map(category => category.id === updated.id ? updated : category);
+  saveCategories(categories);
+}
+
+export function deleteCategory(id: string): void {
+  saveCategories(getCategories().filter(category => category.id !== id));
+}
+
+export function updateTag(updated: Tag): void {
+  const tags = getTags().map(tag => tag.id === updated.id ? updated : tag);
+  saveTags(tags);
+}
+
+export function deleteTag(id: string): void {
+  saveTags(getTags().filter(tag => tag.id !== id));
+}

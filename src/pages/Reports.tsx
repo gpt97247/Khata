@@ -1,14 +1,13 @@
 import { useState, useMemo } from 'react';
 import { useKhata } from '../context/useKhata';
 import { Layout } from '../components/Layout';
-import { formatMonth, getAvailableMonths, getMonthKey, getMonthRange } from '../utils/date';
+import { formatMonth, getMonthKey, getMonthRange } from '../utils/date';
 import { ChevronLeftIcon, ChevronRightIcon, DownloadIcon, TrendingUpIcon, ArrowDownIcon, PieChartIcon, BarChartIcon } from '../components/Icons';
 
 export function Reports() {
   const { expenses, categories, tags } = useKhata();
-  const [selectedMonth, setSelectedMonth] = useState(getMonthKey(new Date()));
-  const availableMonths = useMemo(() => getAvailableMonths(expenses), [expenses]);
-  const currentIndex = availableMonths.indexOf(selectedMonth);
+  const currentMonth = getMonthKey(new Date());
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
 
   const monthExpenses = useMemo(() => {
     const { start, end } = getMonthRange(selectedMonth);
@@ -56,25 +55,14 @@ export function Reports() {
   const maxDaily = Math.max(...Object.values(dailyTotals), 1);
 
   const prevMonth = () => {
-    if (currentIndex < availableMonths.length - 1) setSelectedMonth(availableMonths[currentIndex + 1]);
+    const [year, month] = selectedMonth.split('-').map(Number);
+    setSelectedMonth(getMonthKey(new Date(year, month - 2, 1)));
   };
   const nextMonth = () => {
-    if (currentIndex > 0) setSelectedMonth(availableMonths[currentIndex - 1]);
+    if (selectedMonth >= currentMonth) return;
+    const [year, month] = selectedMonth.split('-').map(Number);
+    setSelectedMonth(getMonthKey(new Date(year, month, 1)));
   };
-
-  if (availableMonths.length === 0) {
-    return (
-      <Layout title="Reports" subtitle="Monthly spending analysis">
-        <div className="card p-12 empty-state">
-          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-            <PieChartIcon className="icon-xl" style={{ color: 'var(--primary)' }} />
-          </div>
-          <h3 className="empty-state-title">No data available</h3>
-          <p className="empty-state-text">Add expenses to generate monthly reports and insights</p>
-        </div>
-      </Layout>
-    );
-  }
 
   return (
     <Layout
@@ -87,13 +75,13 @@ export function Reports() {
       }
     >
       <div className="flex items-center justify-between mb-6">
-        <button className="btn-secondary icon-btn" onClick={prevMonth} disabled={currentIndex === availableMonths.length - 1} aria-label="Previous month">
+        <button className="btn-secondary icon-btn" onClick={prevMonth} aria-label="Previous month">
           <ChevronLeftIcon className="icon" />
         </button>
         <div className="flex items-center gap-4">
           <span className="font-semibold text-lg min-w-[200px] text-center">{formatMonth(selectedMonth + '-01')}</span>
         </div>
-        <button className="btn-secondary icon-btn" onClick={nextMonth} disabled={currentIndex === 0} aria-label="Next month">
+        <button className="btn-secondary icon-btn" onClick={nextMonth} disabled={selectedMonth >= currentMonth} aria-label="Next month">
           <ChevronRightIcon className="icon" />
         </button>
       </div>

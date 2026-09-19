@@ -15,7 +15,7 @@ const getInitialState = (initialData?: Tag | null) => ({
 });
 
 export function TagFormModal({ initialData, tags, onClose }: TagFormModalProps) {
-  const { addTag } = useKhata();
+  const { addTag, editTag } = useKhata();
   const isEditing = !!initialData;
 
   const [name, setName] = useState(() => getInitialState(initialData).name);
@@ -35,15 +35,15 @@ export function TagFormModal({ initialData, tags, onClose }: TagFormModalProps) 
     return true;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
     const data = { name: name.trim(), color };
     if (isEditing && initialData) {
-      // Would need updateTag in storage/context
+      await editTag({ ...initialData, ...data });
     } else {
-      addTag(data);
+      await addTag(data);
     }
     onClose();
   };
@@ -99,7 +99,7 @@ export function TagFormModal({ initialData, tags, onClose }: TagFormModalProps) 
 
         <div className="modal-footer">
           <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
-          <button type="submit" form="tag-form" className="btn-primary" onClick={handleSubmit}>
+          <button type="submit" form="tag-form" className="btn-primary">
             {isEditing ? 'Save Changes' : 'Create Tag'}
           </button>
         </div>

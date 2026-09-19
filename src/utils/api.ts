@@ -37,5 +37,9 @@ export const api = {
   updateExpense: (expense: Expense) => request<Expense>(`/expenses/${encodeURIComponent(expense.id)}`, { method: 'PUT', body: JSON.stringify(expense) }),
   deleteExpense: (id: string) => request<void>(`/expenses/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   createCategory: (category: Category) => request<Category>('/categories', { method: 'POST', body: JSON.stringify(category) }),
+  updateCategory: (category: Category) => request<Category>(`/categories/${encodeURIComponent(category.id)}`, { method: 'PUT', body: JSON.stringify(category) }),
+  deleteCategory: (id: string) => request<void>(`/categories/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   createTag: (tag: Tag) => request<Tag>('/tags', { method: 'POST', body: JSON.stringify(tag) }),
+  updateTag: (tag: Tag) => request<Tag>(`/tags/${encodeURIComponent(tag.id)}`, { method: 'PUT', body: JSON.stringify(tag) }),
+  deleteTag: (id: string) => request<void>(`/tags/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 };

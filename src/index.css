@@ -657,6 +657,7 @@ input[type="color"]::-webkit-color-swatch { border: none; border-radius: var(--r
 .icon-btn-primary:hover { background-color: rgba(59, 130, 246, 0.15); color: var(--primary-light); }
 
 .icon { width: 20px; height: 20px; stroke-width: 2; flex-shrink: 0; }
+.icon-xs { width: 12px; height: 12px; stroke-width: 2.5; flex-shrink: 0; }
 .icon-sm { width: 16px; height: 16px; stroke-width: 2.5; }
 .icon-lg { width: 24px; height: 24px; stroke-width: 2; }
 .icon-xl { width: 32px; height: 32px; stroke-width: 1.5; }

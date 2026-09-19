@@ -16,7 +16,7 @@ const getInitialState = (initialData?: Category | null) => ({
 });
 
 export function CategoryFormModal({ initialData, categories, onClose }: CategoryFormModalProps) {
-  const { addCategory } = useKhata();
+  const { addCategory, editCategory } = useKhata();
   const isEditing = !!initialData;
 
   const [name, setName] = useState(() => getInitialState(initialData).name);
@@ -38,17 +38,15 @@ export function CategoryFormModal({ initialData, categories, onClose }: Category
     return true;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
     const data = { name: name.trim(), icon, color };
     if (isEditing && initialData) {
-      // Note: In a real app, we'd update the category in storage
-      // For now, we'll just call addCategory which creates new
-      // You'd need to add updateCategory to storage/context
+      await editCategory({ ...initialData, ...data });
     } else {
-      addCategory(data);
+      await addCategory(data);
     }
     onClose();
   };
@@ -117,7 +115,7 @@ export function CategoryFormModal({ initialData, categories, onClose }: Category
 
         <div className="modal-footer">
           <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
-          <button type="submit" form="category-form" className="btn-primary" onClick={handleSubmit}>
+          <button type="submit" form="category-form" className="btn-primary">
             {isEditing ? 'Save Changes' : 'Create Category'}
           </button>
         </div>

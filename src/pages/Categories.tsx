@@ -3,10 +3,10 @@ import { useKhata } from '../context/useKhata';
 import { Layout } from '../components/Layout';
 import { CategoryFormModal } from '../components/CategoryFormModal';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
-import { PlusIcon, EditIcon, TrashIcon, CheckIcon } from '../components/Icons';
+import { PlusIcon, EditIcon, TrashIcon } from '../components/Icons';
 
 export function Categories() {
-  const { categories } = useKhata();
+  const { categories, removeCategory } = useKhata();
   const [editingCategory, setEditingCategory] = useState<typeof categories[0] | null>(null);
   const [deletingCategory, setDeletingCategory] = useState<typeof categories[0] | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -14,9 +14,11 @@ export function Categories() {
 
   const handleEdit = (cat: typeof categories[0]) => setEditingCategory(cat);
   const handleDelete = (cat: typeof categories[0]) => setDeletingCategory(cat);
-  const confirmDelete = () => { /* handled by context */ setDeletingCategory(null); };
-
-  const defaultCategoryIds = ['food', 'transport', 'shopping', 'entertainment', 'health', 'utilities', 'education', 'other'];
+  const confirmDelete = async () => {
+    if (!deletingCategory) return;
+    await removeCategory(deletingCategory.id);
+    setDeletingCategory(null);
+  };
 
   return (
     <Layout title="Categories" subtitle={`${categories.length} categories`}>
@@ -41,7 +43,6 @@ export function Categories() {
       ) : (
         <div className="entity-grid">
           {categories.map((category, index) => {
-            const isDefault = defaultCategoryIds.includes(category.id);
             return (
               <div key={category.id} className="card p-5 hover:shadow-lg transition-all duration-300 group animate-slide-up" style={{ animationDelay: `${index * 30}ms` }}>
                 <div className="flex items-start justify-between mb-4">
@@ -59,22 +60,12 @@ export function Categories() {
                       <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>
                     </button>
                     {openMenuId === category.id && <div className="dropdown-menu">
-                      {!isDefault && (
-                        <>
-                          <button className="dropdown-item w-full justify-start flex items-center gap-2" onClick={() => { handleEdit(category); setOpenMenuId(null); }}>
-                            <EditIcon className="icon-sm" /> Edit
-                          </button>
-                          <button className="dropdown-item w-full justify-start flex items-center gap-2 danger" onClick={() => { handleDelete(category); setOpenMenuId(null); }}>
-                            <TrashIcon className="icon-sm" /> Delete
-                          </button>
-                        </>
-                      )}
-                      {isDefault && (
-                        <div className="px-3 py-2 text-xs text-dim flex items-center gap-2">
-                          <CheckIcon className="icon-xs" style={{ color: 'var(--success)' }} />
-                          Default category
-                        </div>
-                      )}
+                      <button className="dropdown-item w-full justify-start flex items-center gap-2" onClick={() => { handleEdit(category); setOpenMenuId(null); }}>
+                        <EditIcon className="icon-sm" /> Edit
+                      </button>
+                      <button className="dropdown-item w-full justify-start flex items-center gap-2 danger" onClick={() => { handleDelete(category); setOpenMenuId(null); }}>
+                        <TrashIcon className="icon-sm" /> Delete
+                      </button>
                     </div>}
                   </div>
                 </div>

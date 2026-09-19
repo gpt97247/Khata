@@ -58,7 +58,7 @@ export function ExpenseFormModal({ initialData, categories, tags, onClose }: Exp
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
@@ -71,25 +71,27 @@ export function ExpenseFormModal({ initialData, categories, tags, onClose }: Exp
     };
 
     if (isEditing && initialData) {
-      editExpense({ ...initialData, ...data });
+      await editExpense({ ...initialData, ...data });
     } else {
-      addExpense(data);
+      await addExpense(data);
     }
     onClose();
   };
 
-  const handleCreateCategory = (e: React.FormEvent) => {
+  const handleCreateCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCategoryName.trim()) return;
-    addCategory({ name: newCategoryName.trim(), icon: newCategoryIcon, color: newCategoryColor });
+    const category = await addCategory({ name: newCategoryName.trim(), icon: newCategoryIcon, color: newCategoryColor });
+    setCategoryId(category.id);
     setShowNewCategory(false);
     setNewCategoryName('');
   };
 
-  const handleCreateTag = (e: React.FormEvent) => {
+  const handleCreateTag = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTagName.trim()) return;
-    addTag({ name: newTagName.trim(), color: newTagColor });
+    const tag = await addTag({ name: newTagName.trim(), color: newTagColor });
+    setTagIds(current => current.includes(tag.id) ? current : [...current, tag.id]);
     setShowNewTag(false);
     setNewTagName('');
   };

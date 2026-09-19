@@ -3,10 +3,10 @@ import { useKhata } from '../context/useKhata';
 import { Layout } from '../components/Layout';
 import { TagFormModal } from '../components/TagFormModal';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
-import { PlusIcon, EditIcon, TrashIcon, CheckIcon } from '../components/Icons';
+import { PlusIcon, EditIcon, TrashIcon } from '../components/Icons';
 
 export function Tags() {
-  const { tags } = useKhata();
+  const { tags, removeTag } = useKhata();
   const [editingTag, setEditingTag] = useState<typeof tags[0] | null>(null);
   const [deletingTag, setDeletingTag] = useState<typeof tags[0] | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -14,9 +14,11 @@ export function Tags() {
 
   const handleEdit = (tag: typeof tags[0]) => setEditingTag(tag);
   const handleDelete = (tag: typeof tags[0]) => setDeletingTag(tag);
-  const confirmDelete = () => { setDeletingTag(null); };
-
-  const defaultTagIds = ['essential', 'want', 'investment', 'emergency'];
+  const confirmDelete = async () => {
+    if (!deletingTag) return;
+    await removeTag(deletingTag.id);
+    setDeletingTag(null);
+  };
 
   return (
     <Layout title="Tags" subtitle={`${tags.length} tags`}>
@@ -41,7 +43,6 @@ export function Tags() {
       ) : (
         <div className="entity-grid">
           {tags.map((tag, index) => {
-            const isDefault = defaultTagIds.includes(tag.id);
             return (
               <div key={tag.id} className="card p-5 hover:shadow-lg transition-all duration-300 group animate-slide-up" style={{ animationDelay: `${index * 30}ms` }}>
                 <div className="flex items-start justify-between mb-4">
@@ -59,22 +60,12 @@ export function Tags() {
                       <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>
                     </button>
                     {openMenuId === tag.id && <div className="dropdown-menu">
-                      {!isDefault && (
-                        <>
-                          <button className="dropdown-item w-full justify-start flex items-center gap-2" onClick={() => { handleEdit(tag); setOpenMenuId(null); }}>
-                            <EditIcon className="icon-sm" /> Edit
-                          </button>
-                          <button className="dropdown-item w-full justify-start flex items-center gap-2 danger" onClick={() => { handleDelete(tag); setOpenMenuId(null); }}>
-                            <TrashIcon className="icon-sm" /> Delete
-                          </button>
-                        </>
-                      )}
-                      {isDefault && (
-                        <div className="px-3 py-2 text-xs text-dim flex items-center gap-2">
-                          <CheckIcon className="icon-xs" style={{ color: 'var(--success)' }} />
-                          Default tag
-                        </div>
-                      )}
+                      <button className="dropdown-item w-full justify-start flex items-center gap-2" onClick={() => { handleEdit(tag); setOpenMenuId(null); }}>
+                        <EditIcon className="icon-sm" /> Edit
+                      </button>
+                      <button className="dropdown-item w-full justify-start flex items-center gap-2 danger" onClick={() => { handleDelete(tag); setOpenMenuId(null); }}>
+                        <TrashIcon className="icon-sm" /> Delete
+                      </button>
                     </div>}
                   </div>
                 </div>
