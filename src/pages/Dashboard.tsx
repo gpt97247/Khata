@@ -2,13 +2,13 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useKhata } from '../context/useKhata';
 import { formatMonth, getMonthKey, getMonthRange } from '../utils/date';
-import { isCredit, spendingAmount, transactionAmountLabel } from '../utils/transactions';
+import { isCredit, spendingAmount, totalAmountLabel, transactionAmountLabel } from '../utils/transactions';
 import { Layout } from '../components/Layout';
 import { PlusIcon, TrendingUpIcon, ArrowDownIcon, ClockIcon, TargetIcon } from '../components/Icons';
 
 const statCards = [
-  { key: 'total', label: 'This Month', icon: TrendingUpIcon, color: '#3b82f6', gradient: 'from-blue-500 to-purple-500' },
-  { key: 'dailyAvg', label: 'Daily Average', icon: ArrowDownIcon, color: '#10b981', gradient: 'from-emerald-500 to-teal-500' },
+  { key: 'total', label: 'Net This Month', icon: TrendingUpIcon, color: '#3b82f6', gradient: 'from-blue-500 to-purple-500' },
+  { key: 'dailyAvg', label: 'Average Net / Day', icon: ArrowDownIcon, color: '#10b981', gradient: 'from-emerald-500 to-teal-500' },
   { key: 'topCategory', label: 'Top Category', icon: TargetIcon, color: '#f59e0b', gradient: 'from-amber-500 to-orange-500' },
   { key: 'expenseCount', label: 'Transactions', icon: ClockIcon, color: '#8b5cf6', gradient: 'from-violet-500 to-pink-500' },
 ];
@@ -65,9 +65,9 @@ export function Dashboard() {
       return d >= start && d <= end;
     });
     const byDay: Record<string, number> = {};
-    monthExpenses.filter(expense => !isCredit(expense)).forEach(e => {
+    monthExpenses.forEach(e => {
       const day = e.date.split('T')[0];
-      byDay[day] = (byDay[day] || 0) + e.amount;
+      byDay[day] = (byDay[day] || 0) + spendingAmount(e);
     });
     const daysInMonth = new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate();
     const data = [];
@@ -78,15 +78,16 @@ export function Dashboard() {
     return data;
   }, [expenses, start, end]);
 
-  const maxDaily = Math.max(...dailySpending.map(d => d.amount), 1);
+  const maxDaily = Math.max(...dailySpending.map(day => Math.abs(day.amount)), 1);
+  const categorySpendingTotal = categoryBreakdown.reduce((sum, item) => sum + item.amount, 0);
 
   return (
     <Layout title="Dashboard" subtitle={`Overview for ${formatMonth(currentMonth + '-01')}`}>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {statCards.map((stat, i) => {
           let value: string;
-          if (i === 0) value = `₹${stats.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-          else if (i === 1) value = `₹${stats.dailyAvg.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+          if (i === 0) value = totalAmountLabel(stats.total);
+          else if (i === 1) value = totalAmountLabel(stats.dailyAvg);
           else if (i === 2) value = stats.topCategory ? `${stats.topCategory.icon} ${stats.topCategory.name}` : '—';
           else value = stats.expenseCount.toString();
 
@@ -201,13 +202,13 @@ export function Dashboard() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{category.name}</p>
                         <div className="h-2 bg-border rounded-full overflow-hidden mt-1">
-                          <div className="h-full rounded-full transition-all duration-500 ease-out" style={{ width: `${(amount / stats.total) * 100}%`, backgroundColor: category.color }} />
+                          <div className="h-full rounded-full transition-all duration-500 ease-out" style={{ width: `${(amount / Math.max(categorySpendingTotal, 1)) * 100}%`, backgroundColor: category.color }} />
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-semibold" style={{ color: category.color }}>₹{amount.toLocaleString('en-IN')}</span>
-                      <span className="text-dim">{((amount / stats.total) * 100).toFixed(1)}%</span>
+                      <span className="text-dim">{((amount / Math.max(categorySpendingTotal, 1)) * 100).toFixed(1)}%</span>
                     </div>
                   </div>
                 )
@@ -219,16 +220,18 @@ export function Dashboard() {
 
       {expenses.length > 0 && (
         <div className="mt-6 card p-5 animate-fade-in">
-          <h2 className="section-title mb-4">Daily Spending This Month</h2>
+          <h2 className="section-title mb-4">Daily Net This Month</h2>
           <div className="h-40 flex items-end justify-center gap-1.5 px-2">
             {dailySpending.map(({ date, amount }) => (
               <div key={date} className="flex-1 max-w-[36px] flex flex-col items-center">
                 <div
                   className="w-full chart-bar rounded-t"
                   style={{
-                    height: `${(amount / maxDaily) * 100}%`,
-                    background: 'linear-gradient(180deg, var(--primary-light), var(--primary))',
-                    minHeight: amount > 0 ? '4px' : '0',
+                    height: `${(Math.abs(amount) / maxDaily) * 100}%`,
+                    background: amount < 0
+                      ? 'linear-gradient(180deg, #fb7185, var(--danger))'
+                      : 'linear-gradient(180deg, var(--primary-light), var(--primary))',
+                    minHeight: amount !== 0 ? '4px' : '0',
                   }}
                 />
                 <span className="text-xs text-dim mt-2 whitespace-nowrap">
@@ -241,7 +244,7 @@ export function Dashboard() {
             {dailySpending.slice(-7).map(({ date, amount }) => (
               <div key={date} className="p-3 bg-bg rounded-lg text-center border">
                 <p className="text-xs text-dim">{new Date(date).toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit' })}</p>
-                <p className="font-semibold">₹{amount.toLocaleString('en-IN')}</p>
+                <p className={`font-semibold ${amount < 0 ? 'text-success' : ''}`}>{totalAmountLabel(amount)}</p>
               </div>
             ))}
           </div>

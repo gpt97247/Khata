@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useKhata } from '../context/useKhata';
 import { Layout } from '../components/Layout';
 import { formatMonth, getMonthKey, getMonthRange } from '../utils/date';
-import { isCredit, spendingAmount } from '../utils/transactions';
+import { isCredit, spendingAmount, totalAmountLabel } from '../utils/transactions';
 import { ChevronLeftIcon, ChevronRightIcon, DownloadIcon, TrendingUpIcon, ArrowDownIcon, PieChartIcon, BarChartIcon } from '../components/Icons';
 
 export function Reports() {
@@ -19,6 +19,9 @@ export function Reports() {
   }, [expenses, selectedMonth]);
 
   const total = monthExpenses.reduce((sum, expense) => sum + spendingAmount(expense), 0);
+  const debitTotal = monthExpenses
+    .filter(expense => !isCredit(expense))
+    .reduce((sum, expense) => sum + expense.amount, 0);
   const daysInMonth = new Date(parseInt(selectedMonth.split('-')[0]), parseInt(selectedMonth.split('-')[1]), 0).getDate();
   const dailyAvg = daysInMonth > 0 ? total / daysInMonth : 0;
   const expenseCount = monthExpenses.length;
@@ -41,9 +44,9 @@ export function Reports() {
 
   const dailyTotals = useMemo(() => {
     const result: Record<string, number> = {};
-    monthExpenses.filter(expense => !isCredit(expense)).forEach(e => {
+    monthExpenses.forEach(e => {
       const day = e.date.split('T')[0];
-      result[day] = (result[day] || 0) + e.amount;
+      result[day] = (result[day] || 0) + spendingAmount(e);
     });
     return result;
   }, [monthExpenses]);
@@ -60,7 +63,7 @@ export function Reports() {
     .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
     .map(([date, amount]) => ({ date, amount }));
 
-  const maxDaily = Math.max(...Object.values(dailyTotals), 1);
+  const maxDaily = Math.max(...Object.values(dailyTotals).map(amount => Math.abs(amount)), 1);
 
   const prevMonth = () => {
     const [year, month] = selectedMonth.split('-').map(Number);
@@ -98,8 +101,8 @@ export function Reports() {
         <div className="stat-card group">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-muted uppercase tracking-wide">Total Spent</p>
-              <p className="text-2xl font-bold mt-1">₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+              <p className="text-xs font-medium text-muted uppercase tracking-wide">Net Spent</p>
+              <p className="text-2xl font-bold mt-1">{totalAmountLabel(total)}</p>
             </div>
             <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--primary)20, var(--purple)20)' }}>
               <TrendingUpIcon className="icon" style={{ color: 'var(--primary)' }} />
@@ -110,8 +113,8 @@ export function Reports() {
         <div className="stat-card group">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-muted uppercase tracking-wide">Daily Average</p>
-              <p className="text-2xl font-bold mt-1">₹{dailyAvg.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+              <p className="text-xs font-medium text-muted uppercase tracking-wide">Average Net / Day</p>
+              <p className="text-2xl font-bold mt-1">{totalAmountLabel(dailyAvg)}</p>
             </div>
             <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--success)20, var(--cyan)20)' }}>
               <ArrowDownIcon className="icon" style={{ color: 'var(--success)' }} />
@@ -165,13 +168,13 @@ export function Reports() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{category.name}</p>
                         <div className="h-2 bg-border rounded-full overflow-hidden mt-1">
-                          <div className="h-full rounded-full transition-all duration-700 ease-out" style={{ width: `${(amount / total) * 100}%`, backgroundColor: category.color }} />
+                          <div className="h-full rounded-full transition-all duration-700 ease-out" style={{ width: `${(amount / Math.max(debitTotal, 1)) * 100}%`, backgroundColor: category.color }} />
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-semibold" style={{ color: category.color }}>₹{amount.toLocaleString('en-IN')}</span>
-                      <span className="text-dim">{((amount / total) * 100).toFixed(1)}%</span>
+                      <span className="text-dim">{((amount / Math.max(debitTotal, 1)) * 100).toFixed(1)}%</span>
                     </div>
                   </div>
                 )
@@ -199,13 +202,13 @@ export function Reports() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{tag.name}</p>
                         <div className="h-2 bg-border rounded-full overflow-hidden mt-1">
-                          <div className="h-full rounded-full transition-all duration-700 ease-out" style={{ width: `${(amount / total) * 100}%`, backgroundColor: tag.color }} />
+                          <div className="h-full rounded-full transition-all duration-700 ease-out" style={{ width: `${(amount / Math.max(debitTotal, 1)) * 100}%`, backgroundColor: tag.color }} />
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-semibold" style={{ color: tag.color }}>₹{amount.toLocaleString('en-IN')}</span>
-                      <span className="text-dim">{((amount / total) * 100).toFixed(1)}%</span>
+                      <span className="text-dim">{((amount / Math.max(debitTotal, 1)) * 100).toFixed(1)}%</span>
                     </div>
                   </div>
                 )
@@ -217,7 +220,7 @@ export function Reports() {
 
       <div className="card p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="section-title">Daily Breakdown</h2>
+          <h2 className="section-title">Daily Net</h2>
           <TrendingUpIcon className="icon text-muted" />
         </div>
         <div className="h-48 flex items-end justify-center gap-2 px-2">
@@ -229,9 +232,11 @@ export function Reports() {
                 <div
                   className="w-full chart-bar rounded-t"
                   style={{
-                    height: `${(amount / maxDaily) * 100}%`,
-                    background: 'linear-gradient(180deg, var(--primary-light), var(--primary))',
-                    minHeight: amount > 0 ? '4px' : '0',
+                    height: `${(Math.abs(amount) / maxDaily) * 100}%`,
+                    background: amount < 0
+                      ? 'linear-gradient(180deg, #fb7185, var(--danger))'
+                      : 'linear-gradient(180deg, var(--primary-light), var(--primary))',
+                    minHeight: amount !== 0 ? '4px' : '0',
                     animationDelay: `${index * 30}ms`,
                   }}
                 />
@@ -246,7 +251,7 @@ export function Reports() {
           {dailyData.slice(-7).map(({ date, amount }) => (
             <div key={date} className="p-3 bg-bg rounded-lg text-center border">
               <p className="text-xs text-dim">{new Date(date).toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit' })}</p>
-              <p className="font-semibold">₹{amount.toLocaleString('en-IN')}</p>
+              <p className={`font-semibold ${amount < 0 ? 'text-success' : ''}`}>{totalAmountLabel(amount)}</p>
             </div>
           ))}
         </div>

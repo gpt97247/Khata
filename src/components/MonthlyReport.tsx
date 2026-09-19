@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import type { Expense, Category, Tag } from '../types';
 import { getAvailableMonths, getMonthKey, formatMonth, getMonthRange } from '../utils/date';
-import { isCredit, spendingAmount } from '../utils/transactions';
+import { isCredit, spendingAmount, totalAmountLabel } from '../utils/transactions';
 
 interface MonthlyReportProps {
   expenses: Expense[];
@@ -22,6 +22,9 @@ export function MonthlyReport({ expenses, categories, tags }: MonthlyReportProps
   }, [expenses, selectedMonth]);
 
   const total = monthExpenses.reduce((sum, expense) => sum + spendingAmount(expense), 0);
+  const debitTotal = monthExpenses
+    .filter(expense => !isCredit(expense))
+    .reduce((sum, expense) => sum + expense.amount, 0);
 
   const byCategory = useMemo(() => {
     const result: Record<string, number> = {};
@@ -43,9 +46,9 @@ export function MonthlyReport({ expenses, categories, tags }: MonthlyReportProps
 
   const dailyTotals = useMemo(() => {
     const result: Record<string, number> = {};
-    monthExpenses.filter(expense => !isCredit(expense)).forEach(e => {
+    monthExpenses.forEach(e => {
       const day = e.date.split('T')[0];
-      result[day] = (result[day] || 0) + e.amount;
+      result[day] = (result[day] || 0) + spendingAmount(e);
     });
     return result;
   }, [monthExpenses]);
@@ -84,8 +87,8 @@ export function MonthlyReport({ expenses, categories, tags }: MonthlyReportProps
 
       <div className="p-6">
         <div className="text-center mb-8">
-          <p className="text-sm text-gray-500">Total for {formatMonth(selectedMonth + '-01')}</p>
-          <p className="text-4xl font-bold text-gray-900 mt-1">₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+          <p className="text-sm text-gray-500">Net total for {formatMonth(selectedMonth + '-01')}</p>
+          <p className="text-4xl font-bold text-gray-900 mt-1">{totalAmountLabel(total)}</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -106,7 +109,7 @@ export function MonthlyReport({ expenses, categories, tags }: MonthlyReportProps
                       </div>
                       <div className="text-right">
                         <p className="font-semibold text-gray-900">₹{amount.toLocaleString('en-IN')}</p>
-                        <p className="text-sm text-gray-500">{((amount / total) * 100).toFixed(1)}%</p>
+                        <p className="text-sm text-gray-500">{((amount / Math.max(debitTotal, 1)) * 100).toFixed(1)}%</p>
                       </div>
                     </div>
                   )
@@ -130,7 +133,7 @@ export function MonthlyReport({ expenses, categories, tags }: MonthlyReportProps
                       </div>
                       <div className="text-right">
                         <p className="font-semibold text-gray-900">₹{amount.toLocaleString('en-IN')}</p>
-                        <p className="text-sm text-gray-500">{((amount / total) * 100).toFixed(1)}%</p>
+                        <p className="text-sm text-gray-500">{((amount / Math.max(debitTotal, 1)) * 100).toFixed(1)}%</p>
                       </div>
                     </div>
                   )
@@ -141,14 +144,14 @@ export function MonthlyReport({ expenses, categories, tags }: MonthlyReportProps
         </div>
 
         <div className="mt-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Daily Breakdown</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Daily Net</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
             {Object.entries(dailyTotals)
               .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
               .map(([date, amount]) => (
                 <div key={date} className="p-3 bg-gray-50 rounded-lg text-center">
                   <p className="text-xs text-gray-500">{new Date(date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</p>
-                  <p className="font-semibold text-gray-900">₹{amount.toLocaleString('en-IN')}</p>
+                  <p className="font-semibold text-gray-900">{totalAmountLabel(amount)}</p>
                 </div>
               ))}
           </div>

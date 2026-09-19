@@ -4,7 +4,7 @@ import { Layout } from '../components/Layout';
 import { ExpenseFormModal } from '../components/ExpenseFormModal';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
 import { formatDate } from '../utils/date';
-import { isCredit, spendingAmount, transactionAmountLabel } from '../utils/transactions';
+import { isCredit, spendingAmount, totalAmountLabel, transactionAmountLabel } from '../utils/transactions';
 import {
   PlusIcon, SearchIcon, FilterIcon, EditIcon, TrashIcon,
   CreditCardIcon,
@@ -96,7 +96,7 @@ export function Expenses() {
   };
 
   return (
-    <Layout title="Expenses" subtitle={`${filteredExpenses.length} transactions • ₹${totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}>
+    <Layout title="Expenses" subtitle={`${filteredExpenses.length} transactions • Net ${totalAmountLabel(totalAmount)}`}>
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="relative flex-1 max-w-xs">
@@ -232,8 +232,8 @@ export function Expenses() {
                       <React.Fragment key={dateKey}>
                         <tr className="bg-bg/50">
                           <td className="font-medium text-muted whitespace-nowrap">{formatDate(dateKey)}</td>
-                          <td colSpan={3} className="text-right font-medium text-muted">Day Total</td>
-                          <td className="text-right font-semibold text-lg">₹{dayTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                          <td colSpan={3} className="text-right font-medium text-muted">Day Net</td>
+                          <td className="text-right font-semibold text-lg">{totalAmountLabel(dayTotal)}</td>
                           <td></td>
                         </tr>
                         {dayExpenses.map(expense => {

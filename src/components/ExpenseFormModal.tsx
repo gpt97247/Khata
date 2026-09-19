@@ -138,7 +138,7 @@ export function ExpenseFormModal({ initialData, categories, tags, onClose }: Exp
                 />
               </div>
               <p className={`form-hint ${amount.trim().startsWith('+') ? 'text-success' : ''}`}>
-                {amount.trim().startsWith('+') ? 'Credit: this will not count as spending.' : 'Debit by default. Prefix + to record a credit.'}
+                {amount.trim().startsWith('+') ? 'Credit: this offsets the net total.' : 'Debit by default. Prefix + to record a credit.'}
               </p>
               {errors.amount && <p id="amount-error" className="form-error" role="alert"><XIcon className="icon-xs" /> {errors.amount}</p>}
             </div>

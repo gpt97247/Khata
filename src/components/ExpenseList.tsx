@@ -1,6 +1,6 @@
 import type { Expense, Category, Tag } from '../types';
 import { formatDate } from '../utils/date';
-import { isCredit, spendingAmount, transactionAmountLabel } from '../utils/transactions';
+import { isCredit, spendingAmount, totalAmountLabel, transactionAmountLabel } from '../utils/transactions';
 
 interface ExpenseListProps {
   expenses: Expense[];
@@ -41,7 +41,7 @@ export function ExpenseList({ expenses, categories, tags, onEdit, onDelete }: Ex
           <div key={dateKey} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
               <span className="font-semibold text-gray-900">{formatDate(dateKey)}</span>
-              <span className="text-sm font-medium text-gray-600">₹{dayTotal.toFixed(2)}</span>
+              <span className="text-sm font-medium text-gray-600">{totalAmountLabel(dayTotal)}</span>
             </div>
             <div className="divide-y divide-gray-100">
               {dayExpenses.map(expense => {
