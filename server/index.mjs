@@ -59,9 +59,18 @@ const tagSchema = new mongoose.Schema({
 }, commonOptions);
 tagSchema.index({ userId: 1, id: 1 }, { unique: true });
 
+// Records that a user's starter data has already been created. Counting rows
+// cannot distinguish a new user from someone who deliberately deleted every
+// default category or tag.
+const userStateSchema = new mongoose.Schema({
+  userId: { type: String, required: true, unique: true },
+  defaultsSeeded: { type: Boolean, default: true },
+}, commonOptions);
+
 const Expense = mongoose.model('Expense', expenseSchema);
 const Category = mongoose.model('Category', categorySchema);
 const Tag = mongoose.model('Tag', tagSchema);
+const UserState = mongoose.model('UserState', userStateSchema);
 
 app.use(cors({ origin: clientOrigin }));
 app.use(express.json({ limit: '100kb' }));
@@ -80,6 +89,9 @@ const publicFields = (document) => Object.fromEntries(
 const getId = (req) => String(req.params.id || '').trim();
 
 async function ensureDefaults(userId) {
+  const existingState = await UserState.findOne({ userId }).lean();
+  if (existingState?.defaultsSeeded) return;
+
   const [categoryCount, tagCount] = await Promise.all([
     Category.countDocuments({ userId }),
     Tag.countDocuments({ userId }),
@@ -88,6 +100,7 @@ async function ensureDefaults(userId) {
   if (categoryCount === 0) writes.push(Category.insertMany(defaultCategories.map(item => ({ ...item, userId }))));
   if (tagCount === 0) writes.push(Tag.insertMany(defaultTags.map(item => ({ ...item, userId }))));
   await Promise.all(writes);
+  await UserState.updateOne({ userId }, { $set: { defaultsSeeded: true } }, { upsert: true });
 }
 
 function requireFields(res, payload, fields) {
