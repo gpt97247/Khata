@@ -6,6 +6,8 @@ import { formatMonth, getMonthKey, getMonthRange } from '../utils/date';
 import { isCredit, spendingAmount, totalAmountLabel } from '../utils/transactions';
 import { DownloadIcon, TrendingUpIcon, PieChartIcon, BarChartIcon } from '../components/Icons';
 
+type ReportPeriod = 'all' | 'custom' | string;
+
 type PieSlice = {
   id: string;
   name: string;
@@ -96,22 +98,54 @@ function getMonthOptions(expenses: { date: string }[], currentMonth: string): st
   return months;
 }
 
+function formatRangeDate(date: string): string {
+  return new Date(`${date}T00:00:00`).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
 export function Reports() {
   const { expenses, categories, tags } = useKhata();
   const currentMonth = getMonthKey(new Date());
-  const [selectedPeriod, setSelectedPeriod] = useState<'all' | string>('all');
+  const [selectedPeriod, setSelectedPeriod] = useState<ReportPeriod>('all');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
   const monthOptions = useMemo(() => getMonthOptions(expenses, currentMonth), [expenses, currentMonth]);
-  const isMonthlyView = selectedPeriod !== 'all';
-  const periodLabel = isMonthlyView ? formatMonth(`${selectedPeriod}-01`) : 'All time';
+  const isCustomView = selectedPeriod === 'custom';
+  const isMonthlyView = selectedPeriod !== 'all' && !isCustomView;
+  const hasValidCustomRange = Boolean(
+    customStartDate
+    && customEndDate
+    && customStartDate <= customEndDate,
+  );
+  const isFilteredView = isMonthlyView || isCustomView;
+  const periodLabel = isMonthlyView
+    ? formatMonth(`${selectedPeriod}-01`)
+    : hasValidCustomRange
+      ? `${formatRangeDate(customStartDate)} – ${formatRangeDate(customEndDate)}`
+      : isCustomView
+        ? 'Custom range'
+        : 'All time';
 
   const reportExpenses = useMemo(() => {
-    if (!isMonthlyView) return expenses;
+    if (selectedPeriod === 'all') return expenses;
+
+    if (isCustomView) {
+      if (!hasValidCustomRange) return [];
+      return expenses.filter(expense => {
+        const expenseDate = expense.date.split('T')[0];
+        return expenseDate >= customStartDate && expenseDate <= customEndDate;
+      });
+    }
+
     const { start, end } = getMonthRange(selectedPeriod);
     return expenses.filter(expense => {
       const date = new Date(expense.date);
       return date >= start && date <= end;
     });
-  }, [expenses, isMonthlyView, selectedPeriod]);
+  }, [customEndDate, customStartDate, expenses, hasValidCustomRange, isCustomView, selectedPeriod]);
 
   const debitTotal = reportExpenses
     .filter(expense => !isCredit(expense))
@@ -145,7 +179,7 @@ export function Reports() {
   }, [reportExpenses, tags]);
 
   const dailyData = useMemo(() => {
-    if (!isMonthlyView) return [];
+    if (!isFilteredView || (isCustomView && !hasValidCustomRange)) return [];
     const totals: Record<string, number> = {};
     reportExpenses.forEach(expense => {
       const day = expense.date.split('T')[0];
@@ -154,7 +188,7 @@ export function Reports() {
     return Object.entries(totals)
       .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
       .map(([date, amount]) => ({ date, amount }));
-  }, [reportExpenses, isMonthlyView]);
+  }, [hasValidCustomRange, isCustomView, isFilteredView, reportExpenses]);
   const maxDaily = Math.max(...dailyData.map(day => Math.abs(day.amount)), 1);
 
   const cashFlowSlices: PieSlice[] = [
@@ -175,15 +209,50 @@ export function Reports() {
       <div className="report-toolbar mb-6">
         <div>
           <h2 className="section-title">Spending overview</h2>
-          <p className="text-sm text-muted mt-1">{isMonthlyView ? `Monthly spend for ${periodLabel}` : 'Your complete spending history'}</p>
+          <p className="text-sm text-muted mt-1">
+            {isMonthlyView
+              ? `Monthly spend for ${periodLabel}`
+              : isCustomView
+                ? hasValidCustomRange
+                  ? `Spending from ${periodLabel}`
+                  : 'Choose a start and end date to view spending.'
+                : 'Your complete spending history'}
+          </p>
         </div>
-        <label className="report-period-select">
-          <span>View period</span>
-          <select className="select" value={selectedPeriod} onChange={event => setSelectedPeriod(event.target.value)}>
-            <option value="all">All time</option>
-            {monthOptions.map(month => <option key={month} value={month}>{formatMonth(`${month}-01`)}</option>)}
-          </select>
-        </label>
+        <div className="report-period-controls">
+          <label className="report-period-select">
+            <span>View period</span>
+            <select className="select" value={selectedPeriod} onChange={event => setSelectedPeriod(event.target.value)}>
+              <option value="all">All time</option>
+              <option value="custom">Custom range</option>
+              {monthOptions.map(month => <option key={month} value={month}>{formatMonth(`${month}-01`)}</option>)}
+            </select>
+          </label>
+          {isCustomView && (
+            <div className="report-custom-range" role="group" aria-label="Custom date range">
+              <label className="report-date-input">
+                <span>From</span>
+                <input
+                  type="date"
+                  className="input"
+                  value={customStartDate}
+                  max={customEndDate || undefined}
+                  onChange={event => setCustomStartDate(event.target.value)}
+                />
+              </label>
+              <label className="report-date-input">
+                <span>To</span>
+                <input
+                  type="date"
+                  className="input"
+                  value={customEndDate}
+                  min={customStartDate || undefined}
+                  onChange={event => setCustomEndDate(event.target.value)}
+                />
+              </label>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -233,7 +302,7 @@ export function Reports() {
         </section>
       )}
 
-      {isMonthlyView && (
+      {isFilteredView && (
         <section className="card p-5">
           <div className="flex items-center justify-between mb-4"><h2 className="section-title">Daily net</h2><TrendingUpIcon className="icon text-muted" /></div>
           {dailyData.length === 0 ? (
