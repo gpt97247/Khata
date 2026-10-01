@@ -12,11 +12,12 @@ type PieSlice = {
   id: string;
   name: string;
   amount: number;
+  netAmount?: number;
   color: string;
   icon?: string;
 };
 
-const formatRupees = (amount: number) => `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+const formatRupees = (amount: number) => `${amount < 0 ? '−' : ''}₹${Math.abs(amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
 
 function pieBackground(slices: PieSlice[]): string {
   const total = slices.reduce((sum, slice) => sum + slice.amount, 0);
@@ -71,7 +72,7 @@ function PieBreakdown({
                 <span className="report-pie-dot" style={{ backgroundColor: slice.color }} />
                 <span className="report-pie-name">{slice.icon && `${slice.icon} `}{slice.name}</span>
                 <span className="report-pie-amount">
-                  {formatRupees(slice.amount)} · {((slice.amount / sliceTotal) * 100).toFixed(1)}%
+                  {formatRupees(slice.netAmount ?? slice.amount)} · {((slice.amount / sliceTotal) * 100).toFixed(1)}%
                 </span>
               </div>
             ))}
@@ -181,15 +182,16 @@ export function Reports() {
 
   const categorySlices = useMemo(() => {
     const totals: Record<string, number> = {};
-    reportExpenses.filter(expense => !isCredit(expense)).forEach(expense => {
-      totals[expense.categoryId] = (totals[expense.categoryId] || 0) + expense.amount;
+    reportExpenses.forEach(expense => {
+      totals[expense.categoryId] = (totals[expense.categoryId] || 0) + spendingAmount(expense);
     });
     return Object.entries(totals)
       .map(([id, amount]) => ({ category: categories.find(category => category.id === id), amount }))
-      .filter((item): item is { category: Category; amount: number } => Boolean(item.category))
-      .sort((a, b) => b.amount - a.amount)
-      .map(({ category, amount }) => ({ id: category.id, name: category.name, icon: category.icon, color: category.color, amount }));
+      .filter((item): item is { category: Category; amount: number } => Boolean(item.category) && item.amount !== 0)
+      .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))
+      .map(({ category, amount }) => ({ id: category.id, name: category.name, icon: category.icon, color: category.color, amount: Math.abs(amount), netAmount: amount }));
   }, [reportExpenses, categories]);
+  const categoryNetTotal = categorySlices.reduce((sum, category) => sum + (category.netAmount ?? category.amount), 0);
 
   const tagBreakdown = useMemo(() => {
     const totals: Record<string, number> = {};
@@ -320,7 +322,7 @@ export function Reports() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <PieBreakdown title="Cash flow" slices={cashFlowSlices} centerValue={totalAmountLabel(netTotal)} centerLabel="net total" emptyMessage="No credits or debits in this period." />
-        <PieBreakdown title="Spending by category" slices={categorySlices} centerValue={formatRupees(debitTotal)} centerLabel="total debits" emptyMessage="No debit spending in this period." />
+        <PieBreakdown title="Net category movement" slices={categorySlices} centerValue={formatRupees(categoryNetTotal)} centerLabel="net category total" emptyMessage="No category activity in this period." />
       </div>
 
       {tagBreakdown.length > 0 && (
