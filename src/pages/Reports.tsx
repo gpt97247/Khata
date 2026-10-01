@@ -2,9 +2,9 @@ import { useMemo, useState } from 'react';
 import type { Category, Tag } from '../types';
 import { useKhata } from '../context/useKhata';
 import { Layout } from '../components/Layout';
-import { formatMonth, getMonthKey, getMonthRange } from '../utils/date';
+import { formatMonth, getDateKey, getMonthKey, getMonthRange } from '../utils/date';
 import { isCredit, spendingAmount, totalAmountLabel } from '../utils/transactions';
-import { DownloadIcon, TrendingUpIcon, PieChartIcon, BarChartIcon } from '../components/Icons';
+import { ArrowRightIcon, BarChartIcon, CalendarIcon, DownloadIcon, PieChartIcon, TrendingUpIcon } from '../components/Icons';
 
 type ReportPeriod = 'all' | 'custom' | string;
 
@@ -109,6 +109,7 @@ function formatRangeDate(date: string): string {
 export function Reports() {
   const { expenses, categories, tags } = useKhata();
   const currentMonth = getMonthKey(new Date());
+  const today = getDateKey(new Date());
   const [selectedPeriod, setSelectedPeriod] = useState<ReportPeriod>('all');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
@@ -118,7 +119,8 @@ export function Reports() {
   const hasValidCustomRange = Boolean(
     customStartDate
     && customEndDate
-    && customStartDate <= customEndDate,
+    && customStartDate <= customEndDate
+    && customEndDate <= today,
   );
   const isFilteredView = isMonthlyView || isCustomView;
   const periodLabel = isMonthlyView
@@ -128,6 +130,28 @@ export function Reports() {
       : isCustomView
         ? 'Custom range'
         : 'All time';
+
+  const applyCurrentMonthRange = () => {
+    setCustomStartDate(`${currentMonth}-01`);
+    setCustomEndDate(today);
+  };
+
+  const handlePeriodChange = (period: string) => {
+    setSelectedPeriod(period);
+    if (period === 'custom' && (!customStartDate || !customEndDate)) applyCurrentMonthRange();
+  };
+
+  const handleCustomStartDateChange = (date: string) => {
+    const safeDate = date > today ? today : date;
+    setCustomStartDate(safeDate);
+    if (safeDate && customEndDate && safeDate > customEndDate) setCustomEndDate(safeDate);
+  };
+
+  const handleCustomEndDateChange = (date: string) => {
+    const safeDate = date > today ? today : date;
+    setCustomEndDate(safeDate);
+    if (safeDate && customStartDate && safeDate < customStartDate) setCustomStartDate(safeDate);
+  };
 
   const reportExpenses = useMemo(() => {
     if (selectedPeriod === 'all') return expenses;
@@ -222,7 +246,7 @@ export function Reports() {
         <div className="report-period-controls">
           <label className="report-period-select">
             <span>View period</span>
-            <select className="select" value={selectedPeriod} onChange={event => setSelectedPeriod(event.target.value)}>
+            <select className="select" value={selectedPeriod} onChange={event => handlePeriodChange(event.target.value)}>
               <option value="all">All time</option>
               <option value="custom">Custom range</option>
               {monthOptions.map(month => <option key={month} value={month}>{formatMonth(`${month}-01`)}</option>)}
@@ -230,26 +254,38 @@ export function Reports() {
           </label>
           {isCustomView && (
             <div className="report-custom-range" role="group" aria-label="Custom date range">
-              <label className="report-date-input">
-                <span>From</span>
-                <input
-                  type="date"
-                  className="input"
-                  value={customStartDate}
-                  max={customEndDate || undefined}
-                  onChange={event => setCustomStartDate(event.target.value)}
-                />
-              </label>
-              <label className="report-date-input">
-                <span>To</span>
-                <input
-                  type="date"
-                  className="input"
-                  value={customEndDate}
-                  min={customStartDate || undefined}
-                  onChange={event => setCustomEndDate(event.target.value)}
-                />
-              </label>
+              <div className="report-range-heading">
+                <div className="report-range-title">
+                  <span className="report-range-icon"><CalendarIcon className="icon-sm" /></span>
+                  <div><strong>Custom date range</strong><span>Choose the first and last day to include</span></div>
+                </div>
+                <button type="button" className="report-range-shortcut" onClick={applyCurrentMonthRange}>This month</button>
+              </div>
+              <div className="report-date-fields">
+                <label className="report-date-input">
+                  <span>Start date</span>
+                  <input
+                    type="date"
+                    className="input"
+                    value={customStartDate}
+                    max={customEndDate || today}
+                    onChange={event => handleCustomStartDateChange(event.target.value)}
+                  />
+                </label>
+                <ArrowRightIcon className="report-date-arrow" />
+                <label className="report-date-input">
+                  <span>End date</span>
+                  <input
+                    type="date"
+                    className="input"
+                    value={customEndDate}
+                    min={customStartDate || undefined}
+                    max={today}
+                    onChange={event => handleCustomEndDateChange(event.target.value)}
+                  />
+                </label>
+              </div>
+              <p className="report-range-help">Both dates are included. Future dates are unavailable.</p>
             </div>
           )}
         </div>
