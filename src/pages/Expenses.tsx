@@ -7,7 +7,7 @@ import { formatDate } from '../utils/date';
 import { isCredit, spendingAmount, totalAmountLabel, transactionAmountLabel } from '../utils/transactions';
 import {
   PlusIcon, SearchIcon, FilterIcon, EditIcon, TrashIcon,
-  CreditCardIcon,
+  CalendarIcon, CreditCardIcon,
   MoreVerticalIcon, XIcon, ChevronUpIcon, ChevronDownIcon
 } from '../components/Icons';
 
@@ -230,18 +230,23 @@ export function Expenses() {
                     const dayTotal = dayExpenses.reduce((sum, expense) => sum + spendingAmount(expense), 0);
                     return (
                       <React.Fragment key={dateKey}>
-                        <tr className="bg-bg/50">
-                          <td className="font-medium text-muted whitespace-nowrap">{formatDate(dateKey)}</td>
-                          <td colSpan={3} className="text-right font-medium text-muted">Day Net</td>
-                          <td className="text-right font-semibold text-lg">{totalAmountLabel(dayTotal)}</td>
+                        <tr className="expense-date-group">
+                          <td className="expense-date-cell">
+                            <div className="expense-date-label">
+                              <span className="expense-date-icon"><CalendarIcon className="icon-sm" /></span>
+                              <div><strong>{formatDate(dateKey)}</strong><span>{dayExpenses.length} {dayExpenses.length === 1 ? 'transaction' : 'transactions'}</span></div>
+                            </div>
+                          </td>
+                          <td colSpan={3} className="expense-date-summary">Daily summary</td>
+                          <td className="expense-date-total"><span>Day net</span><strong>{totalAmountLabel(dayTotal)}</strong></td>
                           <td></td>
                         </tr>
                         {dayExpenses.map(expense => {
                           const category = categories.find(c => c.id === expense.categoryId);
                           const expenseTags = tags.filter(t => expense.tagIds.includes(t.id));
                           return (
-                            <tr key={expense.id} className="hover:bg-hover transition-colors">
-                              <td className="text-muted whitespace-nowrap">{new Date(expense.date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</td>
+                            <tr key={expense.id} className="expense-transaction-row hover:bg-hover transition-colors">
+                              <td className="expense-time-cell">{new Date(expense.date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</td>
                               <td>
                                 <p className="font-medium truncate max-w-[300px]">{expense.description}</p>
                               </td>

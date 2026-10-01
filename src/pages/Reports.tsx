@@ -2,9 +2,9 @@ import { useMemo, useState } from 'react';
 import type { Category, Tag } from '../types';
 import { useKhata } from '../context/useKhata';
 import { Layout } from '../components/Layout';
-import { formatMonth, getDateKey, getMonthKey, getMonthRange } from '../utils/date';
+import { formatDate, formatMonth, getDateKey, getMonthKey, getMonthRange } from '../utils/date';
 import { isCredit, spendingAmount, totalAmountLabel } from '../utils/transactions';
-import { ArrowRightIcon, BarChartIcon, CalendarIcon, DownloadIcon, PieChartIcon, TrendingUpIcon } from '../components/Icons';
+import { ArrowRightIcon, BarChartIcon, CalendarIcon, DownloadIcon, PieChartIcon, ReceiptIcon, TrendingUpIcon } from '../components/Icons';
 
 type ReportPeriod = 'all' | 'custom' | string;
 
@@ -114,6 +114,7 @@ export function Reports() {
   const [selectedPeriod, setSelectedPeriod] = useState<ReportPeriod>('all');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
+  const [selectedDailyDate, setSelectedDailyDate] = useState<string | null>(null);
   const monthOptions = useMemo(() => getMonthOptions(expenses, currentMonth), [expenses, currentMonth]);
   const isCustomView = selectedPeriod === 'custom';
   const isMonthlyView = selectedPeriod !== 'all' && !isCustomView;
@@ -216,6 +217,15 @@ export function Reports() {
       .map(([date, amount]) => ({ date, amount }));
   }, [hasValidCustomRange, isCustomView, isFilteredView, reportExpenses]);
   const maxDaily = Math.max(...dailyData.map(day => Math.abs(day.amount)), 1);
+  const activeDailyDate = dailyData.some(day => day.date === selectedDailyDate)
+    ? selectedDailyDate
+    : dailyData[dailyData.length - 1]?.date ?? null;
+  const selectedDailyExpenses = activeDailyDate
+    ? reportExpenses
+      .filter(expense => expense.date.split('T')[0] === activeDailyDate)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    : [];
+  const selectedDailyNet = selectedDailyExpenses.reduce((sum, expense) => sum + spendingAmount(expense), 0);
 
   const cashFlowSlices: PieSlice[] = [
     { id: 'debits', name: 'Debits', amount: debitTotal, color: 'var(--danger)' },
@@ -341,23 +351,74 @@ export function Reports() {
       )}
 
       {isFilteredView && (
-        <section className="card p-5">
-          <div className="flex items-center justify-between mb-4"><h2 className="section-title">Daily net</h2><TrendingUpIcon className="icon text-muted" /></div>
+        <section className="card p-5 report-daily-card">
+          <div className="report-daily-heading">
+            <div>
+              <h2 className="section-title">Daily net</h2>
+              <p>Choose a date to inspect its transactions.</p>
+            </div>
+            <TrendingUpIcon className="icon text-muted" />
+          </div>
           {dailyData.length === 0 ? (
             <div className="empty-state report-pie-empty"><p className="empty-state-text">No transactions in {periodLabel}.</p></div>
           ) : (
             <>
-              <div className="h-48 flex items-end justify-center gap-2 px-2">
+              <div className="report-daily-chart" role="list" aria-label="Daily net report">
                 {dailyData.map(({ date, amount }, index) => (
-                  <div key={date} className="flex-1 max-w-[40px] flex flex-col items-center">
-                    <div className="w-full chart-bar rounded-t" style={{ height: `${(Math.abs(amount) / maxDaily) * 100}%`, background: amount < 0 ? 'linear-gradient(180deg, #34d399, var(--success))' : 'linear-gradient(180deg, var(--primary-light), var(--primary))', minHeight: amount !== 0 ? '4px' : '0', animationDelay: `${index * 30}ms` }} />
-                    <span className="text-xs text-dim mt-2 whitespace-nowrap">{new Date(date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
-                  </div>
+                  <button
+                    key={date}
+                    type="button"
+                    className={`report-daily-bar ${activeDailyDate === date ? 'is-selected' : ''}`}
+                    onClick={() => setSelectedDailyDate(date)}
+                    aria-pressed={activeDailyDate === date}
+                    aria-label={`View transactions for ${formatDate(date)}: ${totalAmountLabel(amount)}`}
+                  >
+                    <span className="report-daily-bar-fill" style={{ height: `${(Math.abs(amount) / maxDaily) * 100}%`, background: amount < 0 ? 'linear-gradient(180deg, #34d399, var(--success))' : 'linear-gradient(180deg, var(--primary-light), var(--primary))', minHeight: amount !== 0 ? '4px' : '0', animationDelay: `${index * 30}ms` }} />
+                    <span className="report-daily-label">{new Date(`${date}T00:00:00`).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
+                  </button>
                 ))}
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
-                {dailyData.slice(-7).map(({ date, amount }) => <div key={date} className="p-3 bg-bg rounded-lg text-center border"><p className="text-xs text-dim">{new Date(date).toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit' })}</p><p className={`font-semibold ${amount < 0 ? 'text-success' : ''}`}>{totalAmountLabel(amount)}</p></div>)}
+                {dailyData.slice(-7).map(({ date, amount }) => (
+                  <button
+                    key={date}
+                    type="button"
+                    className={`report-day-summary ${activeDailyDate === date ? 'is-selected' : ''}`}
+                    onClick={() => setSelectedDailyDate(date)}
+                    aria-pressed={activeDailyDate === date}
+                  >
+                    <p className="text-xs text-dim">{new Date(`${date}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit' })}</p>
+                    <p className={`font-semibold ${amount < 0 ? 'text-success' : ''}`}>{totalAmountLabel(amount)}</p>
+                  </button>
+                ))}
               </div>
+              {activeDailyDate && (
+                <section className="report-selected-day" aria-live="polite">
+                  <div className="report-selected-day-header">
+                    <div className="report-selected-date">
+                      <span><CalendarIcon className="icon-sm" /></span>
+                      <div><p>Transactions on</p><h3>{formatDate(activeDailyDate)}</h3></div>
+                    </div>
+                    <div className="report-selected-net"><span>Day net</span><strong className={selectedDailyNet < 0 ? 'text-success' : ''}>{totalAmountLabel(selectedDailyNet)}</strong></div>
+                  </div>
+                  {selectedDailyExpenses.length === 0 ? (
+                    <div className="report-selected-empty"><ReceiptIcon className="icon" /><p>No transactions recorded for this date.</p></div>
+                  ) : (
+                    <div className="report-selected-expenses">
+                      {selectedDailyExpenses.map(expense => {
+                        const category = categories.find(item => item.id === expense.categoryId);
+                        return (
+                          <div key={expense.id} className="report-selected-expense">
+                            <span className="report-selected-expense-icon" style={{ backgroundColor: category?.color + '20' }}>{category?.icon || '📦'}</span>
+                            <div className="flex-1 min-w-0"><p className="font-medium truncate">{expense.description}</p><span style={{ color: category?.color }}>{category?.name || 'Uncategorised'}</span></div>
+                            <strong className={isCredit(expense) ? 'text-success' : 'text-danger'}>{isCredit(expense) ? '+' : '−'}{formatRupees(expense.amount)}</strong>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
+              )}
             </>
           )}
         </section>
