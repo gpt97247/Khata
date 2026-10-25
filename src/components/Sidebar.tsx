@@ -40,10 +40,6 @@ function ChevronRightIcon({ className, style }: { className?: string; style?: Re
 function PlusIcon({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return <svg className={className} style={style} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>;
 }
-function SparklesIcon({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  return <svg className={className} style={style} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M22 3v4M20 5h4M5 21v-4M3 19h4M22 21v-4M20 19h4" /></svg>;
-}
-
 interface SidebarProps {
   onQuickAdd: () => void;
 }
@@ -71,20 +67,18 @@ export function Sidebar({ onQuickAdd }: SidebarProps) {
         onMouseLeave={() => collapsed && setCollapsed(true)}
       >
         <div className="flex h-full flex-col">
-          <div className="p-4 border-b relative overflow-hidden">
+          <div className="p-4 border-b relative overflow-hidden brand-panel">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-purple/10" />
             <NavLink to="/" className="flex items-center gap-3 relative z-10" style={{ textDecoration: 'none' }}>
-              <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center flex-shrink-0 shadow-primary">
-                <SparklesIcon className="icon-lg text-white" />
+              <div className="brand-mark w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center flex-shrink-0 shadow-primary">
+                <span>₹</span>
               </div>
               {!collapsed && (
-                <span className="font-bold text-xl text-white bg-gradient-to-r from-white to-primary-light bg-clip-text text-transparent">
-                  Khata
-                </span>
+                <span className="brand-wordmark"><b>khata</b><small>personal ledger</small></span>
               )}
             </NavLink>
             {!collapsed && (
-              <p className="mt-3 text-xs text-dim px-1">Smart expense tracking</p>
+              <p className="mt-3 text-xs text-dim px-1">Your money, beautifully organised.</p>
             )}
           </div>
 
@@ -122,6 +116,7 @@ export function Sidebar({ onQuickAdd }: SidebarProps) {
           </nav>
 
           <div className="p-3 border-t">
+            {!collapsed && <div className="sidebar-ledger-note"><span className="sidebar-ledger-dot" />All changes saved</div>}
             <button
               className="nav-item justify-center w-full"
               onClick={toggleCollapse}

@@ -64,7 +64,7 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
   return (
     <header className="header">
       <div className="header-page-identity min-w-0">
-        <span className="header-kicker">Khata workspace</span>
+        <span className="header-kicker">Personal finance · live workspace</span>
         <div className="flex items-center gap-4 min-w-0">
           <h1 className="text-xl font-bold text-white truncate max-w-[350px]">{title}</h1>
           {subtitle && <span className="text-sm text-muted hidden sm:block">{subtitle}</span>}
