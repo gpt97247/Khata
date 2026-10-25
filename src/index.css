@@ -2421,7 +2421,7 @@ body::before { display: none; }
   .sidebar { z-index: 60; width: min(84vw, 336px); transition: transform 220ms cubic-bezier(.2, .8, .2, 1); }
   .sidebar.collapsed { width: min(84vw, 336px); }
   .sidebar-toggle { z-index: 70; }
-  .sidebar.open + .main-content { pointer-events: none; }
+  .sidebar-toggle.is-open { display: none; }
   .sidebar-close {
     display: inline-grid;
     position: absolute;
@@ -2450,4 +2450,6 @@ body::before { display: none; }
     -webkit-backdrop-filter: blur(2px);
     animation: fadeIn 180ms ease;
   }
+  .sidebar-collapse-control,
+  .sidebar-collapse-hint { display: none; }
 }

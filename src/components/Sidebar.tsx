@@ -70,15 +70,17 @@ export function Sidebar({ onQuickAdd }: SidebarProps) {
   return (
     <>
       <button
-        className="sidebar-toggle fixed top-4 left-4 z-40 btn-icon bg-elevated border shadow-lg"
+        className={`sidebar-toggle ${mobileOpen ? 'is-open' : ''} fixed top-4 left-4 z-40 btn-icon bg-elevated border shadow-lg`}
         onClick={toggleMobileMenu}
         aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
         aria-expanded={mobileOpen}
+        aria-controls="app-navigation"
       >
         {mobileOpen ? <CloseIcon className="icon" /> : <MenuIcon className="icon" />}
       </button>
 
       <aside
+        id="app-navigation"
         className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'open' : ''}`}
         onMouseEnter={() => !collapsed && setCollapsed(false)}
         onMouseLeave={() => collapsed && setCollapsed(true)}
@@ -138,7 +140,7 @@ export function Sidebar({ onQuickAdd }: SidebarProps) {
           <div className="p-3 border-t">
             {!collapsed && <div className="sidebar-ledger-note"><span className="sidebar-ledger-dot" />All changes saved</div>}
             <button
-              className="nav-item justify-center w-full"
+              className="nav-item justify-center w-full sidebar-collapse-control"
               onClick={toggleCollapse}
               aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
@@ -146,7 +148,7 @@ export function Sidebar({ onQuickAdd }: SidebarProps) {
               {!collapsed && <span>Collapse</span>}
             </button>
             {!collapsed && (
-              <p className="mt-3 text-center text-xs text-dim px-2">
+              <p className="sidebar-collapse-hint mt-3 text-center text-xs text-dim px-2">
                 Press <kbd className="mx-1">B</kbd> to toggle
               </p>
             )}
