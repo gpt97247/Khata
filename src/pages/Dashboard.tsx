@@ -9,7 +9,7 @@ import { CalendarIcon, PlusIcon, ReceiptIcon, TrendingUpIcon, ArrowDownIcon, Clo
 const statCards = [
   { key: 'total', label: 'Net This Month', icon: TrendingUpIcon, color: '#3b82f6', gradient: 'from-blue-500 to-purple-500' },
   { key: 'dailyAvg', label: 'Average Net / Day', icon: ArrowDownIcon, color: '#10b981', gradient: 'from-emerald-500 to-teal-500' },
-  { key: 'topCategory', label: 'Top Category', icon: TargetIcon, color: '#f59e0b', gradient: 'from-amber-500 to-orange-500' },
+  { key: 'topCategory', label: 'Top Category', icon: TargetIcon, color: '#55a4e7', gradient: 'from-sky-500 to-blue-500' },
   { key: 'expenseCount', label: 'Transactions', icon: ClockIcon, color: '#8b5cf6', gradient: 'from-violet-500 to-pink-500' },
 ];
 

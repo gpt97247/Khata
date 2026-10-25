@@ -2302,3 +2302,92 @@ body {
   .collection-hero .btn-primary { width: 100%; }
   .page-reports .report-toolbar { margin-inline: -2px; }
 }
+
+/* --------------------------------------------------------------------------
+   Refined palette — neutral midnight surfaces with a single indigo accent.
+   This intentionally sits last so old experimental colour layers cannot leak.
+   -------------------------------------------------------------------------- */
+:root {
+  --bg: #f6f7fb;
+  --bg-elevated: #ffffff;
+  --bg-hover: #f0f3f8;
+  --bg-card: #ffffff;
+  --border: #e4e8f0;
+  --border-light: #d3dae7;
+  --text: #1d2635;
+  --text-muted: #66738a;
+  --text-dim: #98a3b4;
+  --text-inverse: #ffffff;
+  --primary: #5f73ea;
+  --primary-hover: #4d60d5;
+  --primary-light: #8192ff;
+  --primary-glow: rgba(95, 115, 234, .22);
+  --success: #21a979;
+  --danger: #e0645c;
+  --warning: #d69c3a;
+  --purple: #9b70e7;
+  --shadow: 0 2px 5px rgba(30, 42, 68, .025), 0 10px 26px rgba(30, 42, 68, .06);
+  --shadow-lg: 0 3px 9px rgba(30, 42, 68, .04), 0 18px 42px rgba(30, 42, 68, .11);
+}
+
+html.dark {
+  --bg: #101522;
+  --bg-elevated: #151c2a;
+  --bg-hover: #1b2434;
+  --bg-card: #171f2d;
+  --border: #29354a;
+  --border-light: #3a4760;
+  --text: #f0f4fb;
+  --text-muted: #a6b1c3;
+  --text-dim: #6f7c91;
+  --text-inverse: #101522;
+  --primary: #7187ff;
+  --primary-hover: #8497ff;
+  --primary-light: #9dabff;
+  --primary-glow: rgba(113, 135, 255, .25);
+  --success: #38c793;
+  --danger: #f07068;
+  --warning: #e6aa43;
+  --purple: #ad83f3;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .16), 0 12px 32px rgba(0, 0, 0, .16);
+  --shadow-lg: 0 3px 8px rgba(0, 0, 0, .20), 0 22px 48px rgba(0, 0, 0, .28);
+}
+
+body { background: radial-gradient(900px 520px at 86% -12%, rgba(96, 116, 232, .12), transparent 60%), var(--bg); }
+body::before { display: none; }
+
+.sidebar {
+  background: linear-gradient(165deg, #19243a 0%, #101827 100%);
+  border-color: rgba(154, 173, 218, .16);
+  box-shadow: 0 18px 45px rgba(1, 7, 22, .28);
+}
+.sidebar::before { background: radial-gradient(circle at 0 0, rgba(113, 135, 255, .22), transparent 64%); }
+.brand-mark { background: linear-gradient(145deg, #8294ff, #6677e8) !important; color: #fff !important; }
+.brand-wordmark { color: #f8faff; }.brand-wordmark small { color: #9eacc8; }
+.sidebar .text-dim, .sidebar-ledger-note { color: #94a4c3; }
+.sidebar .nav-item { color: #aab8d3; }.sidebar .nav-item:hover { background: rgba(255,255,255,.065); color: #f5f7ff; }
+.sidebar .nav-item.active { color: #f3f5ff; background: linear-gradient(90deg, rgba(113,135,255,.28), rgba(113,135,255,.10)); border-color: rgba(139,157,255,.18); box-shadow: inset 3px 0 0 #8294ff; }
+.sidebar .nav-item.active .icon { color: #aebaff; }.sidebar .nav-section-title { color: #7283a5; }
+.sidebar-ledger-dot { background: #51d39b; box-shadow: 0 0 0 3px rgba(81,211,155,.11); }
+
+.header { border-bottom-color: var(--border); }
+.header-kicker { color: var(--primary-light); }.header h1, .header-page-identity h1 { font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-weight: 750; letter-spacing: -.04em; }
+.quick-add-header, .btn-primary { background: linear-gradient(135deg, #7b8eff, #6273e5) !important; box-shadow: 0 9px 20px rgba(80, 100, 225, .24) !important; }
+.quick-add-header:hover, .btn-primary:hover { background: linear-gradient(135deg, #8999ff, #6c7cee) !important; }
+.icon-btn { background: var(--bg-elevated); border-color: var(--border); }.avatar { background: linear-gradient(135deg, #8b76f4, #6478ed); color: #fff; }
+
+.card, .stat-card { background: var(--bg-card); border-color: var(--border); box-shadow: var(--shadow); }
+.card:hover { border-color: var(--border-light); box-shadow: var(--shadow-lg); }
+.stat-card { background: linear-gradient(145deg, color-mix(in srgb, var(--bg-card) 93%, #7187ff 7%), var(--bg-card)); }
+.stat-card::before { height: 3px; background: #7187ff; }.stat-card:nth-child(2)::before { background: #34bd8d; }.stat-card:nth-child(3)::before { background: #55a4e7; }.stat-card:nth-child(4)::before { background: #a77bea; }
+.section-title { color: var(--text-muted); }
+.input, .select, .textarea { background: color-mix(in srgb, var(--bg) 72%, var(--bg-card)); border-color: var(--border); color: var(--text); }.input:focus, .select:focus, .textarea:focus { background: var(--bg-card); border-color: var(--primary); }
+.btn-secondary { background: var(--bg-elevated); border-color: var(--border); }.expense-row:hover { background: color-mix(in srgb, var(--primary) 7%, var(--bg-hover)); }
+.table th { background: color-mix(in srgb, var(--bg) 78%, var(--bg-card)); }.table tbody tr:not(.expense-date-group):hover td { background: color-mix(in srgb, var(--primary) 6%, var(--bg-hover)); }
+
+.collection-hero, .page-reports .report-toolbar { border-color: color-mix(in srgb, var(--primary) 20%, var(--border)); background: radial-gradient(360px 150px at 100% 0%, rgba(113,135,255,.12), transparent 72%), var(--bg-card); }
+.collection-eyebrow, .page-reports .report-toolbar .section-title { color: var(--primary-light); }.entity-grid > .card::after { background: radial-gradient(ellipse, rgba(113,135,255,.13), transparent 68%); }
+.settings-card > div:first-child { background: color-mix(in srgb, var(--primary) 6%, var(--bg-card)); }.settings-card .divide-y > div:hover { background: color-mix(in srgb, var(--primary) 5%, var(--bg-hover)); }
+.empty-state { background: color-mix(in srgb, var(--primary) 4%, var(--bg-card)); border-color: color-mix(in srgb, var(--primary) 20%, var(--border)); }
+
+@media (max-width: 767px) { .header h1, .header-page-identity h1 { font-family: Inter, ui-sans-serif, system-ui, sans-serif; } }
