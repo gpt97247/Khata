@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 
 const navItems = [
@@ -31,6 +31,9 @@ function SettingsIcon({ className, style }: { className?: string; style?: React.
 function MenuIcon({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return <svg className={className} style={style} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>;
 }
+function CloseIcon({ className, style }: { className?: string; style?: React.CSSProperties }) {
+  return <svg className={className} style={style} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 6l12 12M18 6L6 18" /></svg>;
+}
 function ChevronLeftIcon({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return <svg className={className} style={style} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>;
 }
@@ -50,15 +53,29 @@ export function Sidebar({ onQuickAdd }: SidebarProps) {
   const location = useLocation();
 
   const toggleCollapse = () => setCollapsed(!collapsed);
+  const closeMobileMenu = () => setMobileOpen(false);
+  const toggleMobileMenu = () => {
+    setCollapsed(false);
+    setMobileOpen(open => !open);
+  };
+
+  useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeMobileMenu();
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, []);
 
   return (
     <>
       <button
         className="sidebar-toggle fixed top-4 left-4 z-40 btn-icon bg-elevated border shadow-lg"
-        onClick={() => setMobileOpen(true)}
-        aria-label="Open menu"
+        onClick={toggleMobileMenu}
+        aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+        aria-expanded={mobileOpen}
       >
-        <MenuIcon className="icon" />
+        {mobileOpen ? <CloseIcon className="icon" /> : <MenuIcon className="icon" />}
       </button>
 
       <aside
@@ -69,6 +86,9 @@ export function Sidebar({ onQuickAdd }: SidebarProps) {
         <div className="flex h-full flex-col">
           <div className="p-4 border-b relative overflow-hidden brand-panel">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-purple/10" />
+            <button type="button" className="sidebar-close" onClick={closeMobileMenu} aria-label="Close menu">
+              <CloseIcon className="icon" />
+            </button>
             <NavLink to="/" className="flex items-center gap-3 relative z-10" style={{ textDecoration: 'none' }}>
               <div className="brand-mark w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center flex-shrink-0 shadow-primary">
                 <span>₹</span>
@@ -92,7 +112,7 @@ export function Sidebar({ onQuickAdd }: SidebarProps) {
                   to={item.path}
                   className={`nav-item ${isActive ? 'active' : ''}`}
                   style={{ textDecoration: 'none' }}
-                  onClick={() => setMobileOpen(false)}
+                  onClick={closeMobileMenu}
                 >
                   <Icon className="icon" />
                   {!collapsed && <span>{item.label}</span>}
@@ -106,7 +126,7 @@ export function Sidebar({ onQuickAdd }: SidebarProps) {
                 className="nav-item quick-add-nav"
                 onClick={() => {
                   onQuickAdd();
-                  setMobileOpen(false);
+                  closeMobileMenu();
                 }}
               >
                 <PlusIcon className="icon" />
@@ -135,7 +155,7 @@ export function Sidebar({ onQuickAdd }: SidebarProps) {
       </aside>
 
       {mobileOpen && (
-        <div className="fixed inset-0 bg-black/50 z-20 md:hidden animate-fade-in" onClick={() => setMobileOpen(false)} />
+        <button type="button" className="sidebar-backdrop" onClick={closeMobileMenu} aria-label="Close navigation menu" />
       )}
     </>
   );
