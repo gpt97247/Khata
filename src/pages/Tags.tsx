@@ -22,8 +22,11 @@ export function Tags() {
 
   return (
     <Layout title="Tags" subtitle={`${tags.length} tags`}>
-      <div className="flex justify-between items-center mb-6">
-        <div></div>
+      <div className="collection-hero flex justify-between items-center mb-6">
+        <div>
+          <p className="collection-eyebrow">Organisation</p>
+          <p className="collection-description">Add flexible labels to find important transactions faster.</p>
+        </div>
         <button className="btn-primary" onClick={() => setShowAddModal(true)}>
           <PlusIcon className="icon-sm" /> Add Tag
         </button>

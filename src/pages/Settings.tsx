@@ -103,9 +103,9 @@ export function Settings() {
 
   return (
     <Layout title="Settings" subtitle="Manage your preferences">
-      <div className="max-w-3xl space-y-6">
+      <div className="settings-page max-w-3xl space-y-6">
         {settingsSections.map(section => (
-          <div key={section.title} className="card overflow-hidden animate-fade-in">
+          <div key={section.title} className="card settings-card overflow-hidden animate-fade-in">
             <div className="px-5 py-4 border-b bg-bg/50">
               <h2 className="font-semibold text-sm text-muted uppercase tracking-wider">{section.title}</h2>
             </div>

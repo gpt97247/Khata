@@ -97,8 +97,8 @@ export function Expenses() {
 
   return (
     <Layout title="Expenses" subtitle={`${filteredExpenses.length} transactions • Net ${totalAmountLabel(totalAmount)}`}>
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="expenses-page flex flex-col gap-4">
+        <div className="expense-command-bar flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="relative flex-1 max-w-xs">
             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 icon-sm text-dim" />
             <input

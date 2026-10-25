@@ -33,7 +33,7 @@ export function Layout({ title, subtitle, headerActions, children }: LayoutProps
             </>
           }
         />
-        <div className="page-content">
+        <div className={`page-content page-${title.toLowerCase().replace(/\s+/g, '-')}`}>
           {children}
         </div>
       </main>

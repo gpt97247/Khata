@@ -63,9 +63,12 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
 
   return (
     <header className="header">
-      <div className="flex items-center gap-4 min-w-0">
-        <h1 className="text-xl font-bold text-white truncate max-w-[350px]">{title}</h1>
-        {subtitle && <span className="text-sm text-muted hidden sm:block">{subtitle}</span>}
+      <div className="header-page-identity min-w-0">
+        <span className="header-kicker">Khata workspace</span>
+        <div className="flex items-center gap-4 min-w-0">
+          <h1 className="text-xl font-bold text-white truncate max-w-[350px]">{title}</h1>
+          {subtitle && <span className="text-sm text-muted hidden sm:block">{subtitle}</span>}
+        </div>
       </div>
 
       <div className="flex items-center gap-2">

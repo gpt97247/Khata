@@ -22,8 +22,11 @@ export function Categories() {
 
   return (
     <Layout title="Categories" subtitle={`${categories.length} categories`}>
-      <div className="flex justify-between items-center mb-6">
-        <div></div>
+      <div className="collection-hero flex justify-between items-center mb-6">
+        <div>
+          <p className="collection-eyebrow">Organisation</p>
+          <p className="collection-description">Keep every transaction neatly grouped and easy to recognise.</p>
+        </div>
         <button className="btn-primary" onClick={() => setShowAddModal(true)}>
           <PlusIcon className="icon-sm" /> Add Category
         </button>
