@@ -38,12 +38,16 @@ function PieBreakdown({
   centerValue,
   centerLabel,
   emptyMessage,
+  selectedSliceId,
+  onSliceClick,
 }: {
   title: string;
   slices: PieSlice[];
   centerValue: string;
   centerLabel: string;
   emptyMessage: string;
+  selectedSliceId?: string | null;
+  onSliceClick?: (sliceId: string) => void;
 }) {
   const visibleSlices = slices.filter(slice => slice.amount > 0);
   const sliceTotal = visibleSlices.reduce((sum, slice) => sum + slice.amount, 0);
@@ -68,13 +72,20 @@ function PieBreakdown({
           </div>
           <div className="report-pie-legend">
             {visibleSlices.map(slice => (
-              <div key={slice.id} className="report-pie-legend-item">
+              <button
+                key={slice.id}
+                type="button"
+                className={`report-pie-legend-item ${onSliceClick ? 'is-clickable' : ''} ${selectedSliceId === slice.id ? 'is-selected' : ''}`}
+                onClick={() => onSliceClick?.(slice.id)}
+                aria-pressed={onSliceClick ? selectedSliceId === slice.id : undefined}
+                disabled={!onSliceClick}
+              >
                 <span className="report-pie-dot" style={{ backgroundColor: slice.color }} />
                 <span className="report-pie-name">{slice.icon && `${slice.icon} `}{slice.name}</span>
                 <span className="report-pie-amount">
                   {formatRupees(slice.netAmount ?? slice.amount)} · {((slice.amount / sliceTotal) * 100).toFixed(1)}%
                 </span>
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -115,6 +126,7 @@ export function Reports() {
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [selectedDailyDate, setSelectedDailyDate] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const monthOptions = useMemo(() => getMonthOptions(expenses, currentMonth), [expenses, currentMonth]);
   const isCustomView = selectedPeriod === 'custom';
   const isMonthlyView = selectedPeriod !== 'all' && !isCustomView;
@@ -193,6 +205,22 @@ export function Reports() {
       .map(({ category, amount }) => ({ id: category.id, name: category.name, icon: category.icon, color: category.color, amount: Math.abs(amount), netAmount: amount }));
   }, [reportExpenses, categories]);
   const categoryNetTotal = categorySlices.reduce((sum, category) => sum + (category.netAmount ?? category.amount), 0);
+  const activeCategoryId = categorySlices.some(category => category.id === selectedCategoryId)
+    ? selectedCategoryId
+    : null;
+  const selectedCategory = activeCategoryId ? categories.find(category => category.id === activeCategoryId) : null;
+  const selectedCategoryExpenses = activeCategoryId
+    ? reportExpenses
+      .filter(expense => expense.categoryId === activeCategoryId)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime() || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    : [];
+  const selectedCategoryDebit = selectedCategoryExpenses
+    .filter(expense => !isCredit(expense))
+    .reduce((sum, expense) => sum + expense.amount, 0);
+  const selectedCategoryCredit = selectedCategoryExpenses
+    .filter(isCredit)
+    .reduce((sum, expense) => sum + expense.amount, 0);
+  const selectedCategoryNet = selectedCategoryExpenses.reduce((sum, expense) => sum + spendingAmount(expense), 0);
 
   const tagBreakdown = useMemo(() => {
     const totals: Record<string, number> = {};
@@ -332,8 +360,43 @@ export function Reports() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <PieBreakdown title="Cash flow" slices={cashFlowSlices} centerValue={totalAmountLabel(netTotal)} centerLabel="net total" emptyMessage="No credits or debits in this period." />
-        <PieBreakdown title="Net category movement" slices={categorySlices} centerValue={formatRupees(categoryNetTotal)} centerLabel="net category total" emptyMessage="No category activity in this period." />
+        <PieBreakdown
+          title="Net category movement"
+          slices={categorySlices}
+          centerValue={formatRupees(categoryNetTotal)}
+          centerLabel="net category total"
+          emptyMessage="No category activity in this period."
+          selectedSliceId={activeCategoryId}
+          onSliceClick={sliceId => setSelectedCategoryId(current => current === sliceId ? null : sliceId)}
+        />
       </div>
+
+      {selectedCategory && (
+        <section className="card p-5 report-category-breakdown" aria-live="polite">
+          <div className="report-category-heading">
+            <div className="report-category-title">
+              <span style={{ backgroundColor: selectedCategory.color + '20', color: selectedCategory.color }}>{selectedCategory.icon}</span>
+              <div><p>Category breakdown</p><h2>{selectedCategory.name}</h2><small>{periodLabel}</small></div>
+            </div>
+            <button type="button" className="report-category-close" onClick={() => setSelectedCategoryId(null)} aria-label="Close category breakdown">×</button>
+          </div>
+          <div className="report-category-stats">
+            <div><span>Net</span><strong className={selectedCategoryNet < 0 ? 'text-success' : ''}>{totalAmountLabel(selectedCategoryNet)}</strong></div>
+            <div><span>Debits</span><strong>{formatRupees(selectedCategoryDebit)}</strong></div>
+            <div><span>Credits</span><strong className="text-success">+{formatRupees(selectedCategoryCredit)}</strong></div>
+            <div><span>Transactions</span><strong>{selectedCategoryExpenses.length}</strong></div>
+          </div>
+          <div className="report-category-transactions">
+            <h3>Transactions</h3>
+            {selectedCategoryExpenses.map(expense => (
+              <div key={expense.id} className="report-category-transaction">
+                <div className="flex-1 min-w-0"><p className="font-medium truncate">{expense.description}</p><span>{formatDate(expense.date.split('T')[0])}</span></div>
+                <strong className={isCredit(expense) ? 'text-success' : 'text-danger'}>{isCredit(expense) ? '+' : '−'}{formatRupees(expense.amount)}</strong>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {tagBreakdown.length > 0 && (
         <section className="card p-5 mb-6">
