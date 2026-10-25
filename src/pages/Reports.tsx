@@ -385,7 +385,7 @@ export function Reports() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className="report-breakdowns mb-6">
         <PieBreakdown
           title="Cash flow"
           slices={cashFlowSlices}

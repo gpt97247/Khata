@@ -2391,3 +2391,26 @@ body::before { display: none; }
 .empty-state { background: color-mix(in srgb, var(--primary) 4%, var(--bg-card)); border-color: color-mix(in srgb, var(--primary) 20%, var(--border)); }
 
 @media (max-width: 767px) { .header h1, .header-page-identity h1 { font-family: Inter, ui-sans-serif, system-ui, sans-serif; } }
+
+/* Reports: keep both breakdowns in view together instead of a long stacked feed. */
+.report-breakdowns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 24px;
+}
+.report-breakdowns .report-pie-card { min-height: 0; }
+.report-breakdowns .report-pie-layout { grid-template-columns: minmax(145px, .75fr) minmax(185px, 1.25fr); gap: 20px; }
+.report-breakdowns .report-pie { width: min(100%, 190px); }
+.report-breakdowns .report-pie-legend { max-height: none; overflow: visible; }
+
+@media (max-width: 1180px) {
+  .report-breakdowns { grid-template-columns: 1fr; }
+  .report-breakdowns .report-pie-layout { grid-template-columns: minmax(160px, .8fr) minmax(190px, 1.2fr); gap: 26px; }
+  .report-breakdowns .report-pie { width: min(100%, 208px); }
+}
+
+@media (max-width: 640px) {
+  .report-breakdowns .report-pie-layout { grid-template-columns: 1fr; gap: 22px; }
+  .report-breakdowns .report-pie { width: min(100%, 190px); }
+}
