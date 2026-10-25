@@ -127,6 +127,7 @@ export function Reports() {
   const [customEndDate, setCustomEndDate] = useState('');
   const [selectedDailyDate, setSelectedDailyDate] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [selectedCashFlowId, setSelectedCashFlowId] = useState<'debits' | 'credits' | null>(null);
   const monthOptions = useMemo(() => getMonthOptions(expenses, currentMonth), [expenses, currentMonth]);
   const isCustomView = selectedPeriod === 'custom';
   const isMonthlyView = selectedPeriod !== 'all' && !isCustomView;
@@ -259,6 +260,32 @@ export function Reports() {
     { id: 'debits', name: 'Debits', amount: debitTotal, color: 'var(--danger)' },
     { id: 'credits', name: 'Credits', amount: creditTotal, color: 'var(--success)' },
   ];
+  const selectedCashFlowExpenses = selectedCashFlowId
+    ? reportExpenses
+      .filter(expense => selectedCashFlowId === 'credits' ? isCredit(expense) : !isCredit(expense))
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime() || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    : [];
+  const selectedBreakdown = selectedCategory
+    ? {
+      icon: selectedCategory.icon,
+      name: selectedCategory.name,
+      color: selectedCategory.color,
+      expenses: selectedCategoryExpenses,
+      debit: selectedCategoryDebit,
+      credit: selectedCategoryCredit,
+      net: selectedCategoryNet,
+    }
+    : selectedCashFlowId
+      ? {
+        icon: selectedCashFlowId === 'credits' ? '↑' : '↓',
+        name: selectedCashFlowId === 'credits' ? 'Credits' : 'Debits',
+        color: selectedCashFlowId === 'credits' ? 'var(--success)' : 'var(--danger)',
+        expenses: selectedCashFlowExpenses,
+        debit: selectedCashFlowId === 'debits' ? debitTotal : 0,
+        credit: selectedCashFlowId === 'credits' ? creditTotal : 0,
+        net: selectedCashFlowExpenses.reduce((sum, expense) => sum + spendingAmount(expense), 0),
+      }
+      : null;
 
   return (
     <Layout
@@ -359,7 +386,19 @@ export function Reports() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <PieBreakdown title="Cash flow" slices={cashFlowSlices} centerValue={totalAmountLabel(netTotal)} centerLabel="net total" emptyMessage="No credits or debits in this period." />
+        <PieBreakdown
+          title="Cash flow"
+          slices={cashFlowSlices}
+          centerValue={totalAmountLabel(netTotal)}
+          centerLabel="net total"
+          emptyMessage="No credits or debits in this period."
+          selectedSliceId={selectedCashFlowId}
+          onSliceClick={sliceId => {
+            const flowId = sliceId as 'debits' | 'credits';
+            setSelectedCashFlowId(current => current === flowId ? null : flowId);
+            setSelectedCategoryId(null);
+          }}
+        />
         <PieBreakdown
           title="Net category movement"
           slices={categorySlices}
@@ -367,28 +406,31 @@ export function Reports() {
           centerLabel="net category total"
           emptyMessage="No category activity in this period."
           selectedSliceId={activeCategoryId}
-          onSliceClick={sliceId => setSelectedCategoryId(current => current === sliceId ? null : sliceId)}
+          onSliceClick={sliceId => {
+            setSelectedCategoryId(current => current === sliceId ? null : sliceId);
+            setSelectedCashFlowId(null);
+          }}
         />
       </div>
 
-      {selectedCategory && (
+      {selectedBreakdown && (
         <section className="card p-5 report-category-breakdown" aria-live="polite">
           <div className="report-category-heading">
             <div className="report-category-title">
-              <span style={{ backgroundColor: selectedCategory.color + '20', color: selectedCategory.color }}>{selectedCategory.icon}</span>
-              <div><p>Category breakdown</p><h2>{selectedCategory.name}</h2><small>{periodLabel}</small></div>
+              <span style={{ backgroundColor: selectedBreakdown.color + '20', color: selectedBreakdown.color }}>{selectedBreakdown.icon}</span>
+              <div><p>{selectedCategory ? 'Category breakdown' : 'Cash flow breakdown'}</p><h2>{selectedBreakdown.name}</h2><small>{periodLabel}</small></div>
             </div>
-            <button type="button" className="report-category-close" onClick={() => setSelectedCategoryId(null)} aria-label="Close category breakdown">×</button>
+            <button type="button" className="report-category-close" onClick={() => { setSelectedCategoryId(null); setSelectedCashFlowId(null); }} aria-label="Close breakdown">×</button>
           </div>
           <div className="report-category-stats">
-            <div><span>Net</span><strong className={selectedCategoryNet < 0 ? 'text-success' : ''}>{totalAmountLabel(selectedCategoryNet)}</strong></div>
-            <div><span>Debits</span><strong>{formatRupees(selectedCategoryDebit)}</strong></div>
-            <div><span>Credits</span><strong className="text-success">+{formatRupees(selectedCategoryCredit)}</strong></div>
-            <div><span>Transactions</span><strong>{selectedCategoryExpenses.length}</strong></div>
+            <div><span>Net</span><strong className={selectedBreakdown.net < 0 ? 'text-success' : ''}>{totalAmountLabel(selectedBreakdown.net)}</strong></div>
+            <div><span>Debits</span><strong>{formatRupees(selectedBreakdown.debit)}</strong></div>
+            <div><span>Credits</span><strong className="text-success">+{formatRupees(selectedBreakdown.credit)}</strong></div>
+            <div><span>Transactions</span><strong>{selectedBreakdown.expenses.length}</strong></div>
           </div>
           <div className="report-category-transactions">
             <h3>Transactions</h3>
-            {selectedCategoryExpenses.map(expense => (
+            {selectedBreakdown.expenses.map(expense => (
               <div key={expense.id} className="report-category-transaction">
                 <div className="flex-1 min-w-0"><p className="font-medium truncate">{expense.description}</p><span>{formatDate(expense.date.split('T')[0])}</span></div>
                 <strong className={isCredit(expense) ? 'text-success' : 'text-danger'}>{isCredit(expense) ? '+' : '−'}{formatRupees(expense.amount)}</strong>
