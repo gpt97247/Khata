@@ -2,8 +2,7 @@ import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { ExpenseFormModal } from './ExpenseFormModal';
 import { useKhata } from '../context/useKhata';
-import { PlusIcon } from './Icons';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface LayoutProps {
   title: string;
@@ -16,6 +15,12 @@ export function Layout({ title, subtitle, headerActions, children }: LayoutProps
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const { categories, tags } = useKhata();
 
+  useEffect(() => {
+    const openQuickAdd = () => setShowQuickAdd(true);
+    window.addEventListener('khata:quick-add', openQuickAdd);
+    return () => window.removeEventListener('khata:quick-add', openQuickAdd);
+  }, []);
+
   return (
     <div className="app-shell flex min-h-screen bg-bg">
       <Sidebar onQuickAdd={() => setShowQuickAdd(true)} />
@@ -23,15 +28,7 @@ export function Layout({ title, subtitle, headerActions, children }: LayoutProps
         <Header
           title={title}
           subtitle={subtitle}
-          actions={
-            <>
-              {headerActions}
-              <button className="quick-add-header" onClick={() => setShowQuickAdd(true)}>
-                <PlusIcon className="icon-sm" />
-                <span>Add expense</span>
-              </button>
-            </>
-          }
+          actions={headerActions}
         />
         <div className={`page-content page-${title.toLowerCase().replace(/\s+/g, '-')}`}>
           {children}

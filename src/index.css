@@ -2596,3 +2596,72 @@ body::before { display: none; }
     -webkit-backdrop-filter: blur(2px);
   }
 }
+
+/* Page header — deliberate, compact and free of placeholder account controls. */
+.app-header {
+  position: sticky;
+  z-index: 20;
+  top: 0;
+  display: flex;
+  min-height: 88px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 0 26px;
+  padding: 14px 4px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.app-header__identity { min-width: 0; }
+.app-header__identity h1 { overflow: hidden; color: var(--text); font-size: clamp(22px, 2vw, 28px); font-weight: 760; letter-spacing: -.045em; line-height: 1.12; text-overflow: ellipsis; white-space: nowrap; }
+.app-header__identity p { overflow: hidden; margin-top: 5px; color: var(--text-muted); font-size: 12px; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+.app-header__actions { display: flex; flex: 0 0 auto; align-items: center; gap: 9px; }
+.app-header__utility { display: contents; }
+.app-header__utility .icon-btn,
+.app-header__icon-button {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  box-shadow: none;
+}
+.app-header__utility .icon-btn:hover,
+.app-header__icon-button:hover { color: var(--primary); border-color: color-mix(in srgb, var(--primary) 35%, var(--border)); background: color-mix(in srgb, var(--primary) 7%, var(--bg-elevated)); }
+.app-header__add {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 15px;
+  color: #fff;
+  background: linear-gradient(135deg, #7b8eff, #6273e5);
+  border: 1px solid transparent;
+  border-radius: 11px;
+  box-shadow: 0 8px 18px rgba(80, 100, 225, .22);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.app-header__add:hover { background: linear-gradient(135deg, #8999ff, #6c7cee); }
+.app-header__add:active { transform: translateY(1px); }
+
+@media (max-width: 900px) {
+  .app-header { min-height: 74px; margin: 0 16px; padding: 12px 4px 12px 58px; }
+}
+@media (max-width: 560px) {
+  .app-header { gap: 10px; margin: 0 12px; padding-left: 60px; }
+  .app-header__identity h1 { font-size: 20px; }
+  .app-header__identity p { display: none; }
+  .app-header__actions { gap: 7px; }
+  .app-header__utility .icon-btn,
+  .app-header__icon-button,
+  .app-header__add { width: 40px; min-width: 40px; padding: 0; }
+  .app-header__add span { display: none; }
+}
