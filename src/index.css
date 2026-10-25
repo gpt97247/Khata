@@ -2665,3 +2665,60 @@ body::before { display: none; }
   .app-header__add { width: 40px; min-width: 40px; padding: 0; }
   .app-header__add span { display: none; }
 }
+
+/* Profile & security */
+.profile-security-card { padding: 24px; }
+.profile-security-heading { display: flex; align-items: center; gap: 14px; }
+.profile-avatar {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  place-items: center;
+  color: #fff;
+  background: linear-gradient(145deg, #8294ff, #6677e8);
+  border-radius: 15px;
+  font-size: 18px;
+  font-weight: 750;
+}
+.profile-security-heading .section-title { margin: 0 0 3px; }
+.profile-security-heading h2 { color: var(--text); font-size: 18px; letter-spacing: -.025em; }
+.profile-security-heading span { display: block; margin-top: 3px; color: var(--text-muted); font-size: 12px; }
+.profile-security-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 20px;
+  padding: 11px 12px;
+  color: #9b6311;
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warning) 28%, transparent);
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.profile-security-warning .icon-sm { flex: 0 0 auto; margin-top: 1px; }
+.profile-name-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 12px; margin-top: 22px; }
+.profile-field { display: grid; gap: 7px; min-width: 0; }
+.profile-field > span { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: 11px; font-weight: 700; letter-spacing: .04em; }
+.profile-field .icon-sm { width: 14px; height: 14px; color: var(--primary); }
+.profile-save-button { min-height: 42px; padding-inline: 16px; }
+.profile-password-section { margin-top: 24px; padding-top: 22px; border-top: 1px solid var(--border); }
+.profile-password-heading { display: flex; align-items: flex-start; gap: 10px; }
+.profile-password-icon { display: grid; width: 34px; height: 34px; flex: 0 0 auto; place-items: center; color: var(--primary); background: color-mix(in srgb, var(--primary) 12%, transparent); border-radius: 10px; }
+.profile-password-heading h3 { color: var(--text); font-size: 14px; }
+.profile-password-heading p { margin-top: 2px; color: var(--text-muted); font-size: 12px; line-height: 1.45; }
+.profile-password-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; align-items: end; gap: 12px; margin-top: 17px; }
+.profile-message { margin-top: 16px; font-size: 12px; font-weight: 600; }
+.profile-message.is-success { color: var(--success); }.profile-message.is-error { color: var(--danger); }
+
+@media (max-width: 850px) {
+  .profile-password-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .profile-password-form .profile-save-button { grid-column: 1 / -1; justify-self: start; }
+}
+@media (max-width: 560px) {
+  .profile-security-card { padding: 18px; }
+  .profile-name-form, .profile-password-form { grid-template-columns: 1fr; }
+  .profile-save-button { width: 100%; }
+  .profile-password-form .profile-save-button { grid-column: auto; justify-self: stretch; }
+}

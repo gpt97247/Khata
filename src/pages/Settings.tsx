@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Layout } from '../components/Layout';
 import { applyTheme, getThemePreference } from '../utils/theme';
+import type { UserProfile } from '../types';
+import { api } from '../utils/api';
 import {
   GlobeIcon, DatabaseIcon, BellIcon, MoonIcon, SunIcon,
   CreditCardIcon, PaletteIcon, DownloadIcon, UploadIcon,
   TrashIcon, CalendarIcon, AlertCircleIcon, InfoIcon,
-  FileTextIcon, GithubIcon, CheckIcon
+  FileTextIcon, GithubIcon, CheckIcon, UserIcon, LockIcon, ShieldIcon
 } from '../components/Icons';
 
 interface SettingItem {
@@ -77,6 +79,14 @@ export function Settings() {
     weekly: false,
     budget: false,
   });
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [displayName, setDisplayName] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [profileMessage, setProfileMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
 
   useEffect(() => {
     applyTheme(theme);
@@ -85,6 +95,21 @@ export function Settings() {
   useEffect(() => {
     localStorage.setItem('currency', currency);
   }, [currency]);
+
+  useEffect(() => {
+    let isActive = true;
+    api.getProfile()
+      .then(nextProfile => {
+        if (!isActive) return;
+        setProfile(nextProfile);
+        setDisplayName(nextProfile.displayName);
+      })
+      .catch(() => {
+        if (!isActive) return;
+        setProfileMessage({ text: 'Profile details will load when the API is available.', type: 'error' });
+      });
+    return () => { isActive = false; };
+  }, []);
 
   const handleExport = () => {
     alert('Export functionality would be implemented here');
@@ -101,9 +126,105 @@ export function Settings() {
     }
   };
 
+  const handleProfileSave = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!displayName.trim()) {
+      setProfileMessage({ text: 'Enter a display name.', type: 'error' });
+      return;
+    }
+    setSavingProfile(true);
+    setProfileMessage(null);
+    try {
+      const nextProfile = await api.updateProfile(displayName.trim());
+      setProfile(nextProfile);
+      setDisplayName(nextProfile.displayName);
+      setProfileMessage({ text: 'Profile saved.', type: 'success' });
+    } catch (error) {
+      setProfileMessage({ text: error instanceof Error ? error.message : 'Could not save profile.', type: 'error' });
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handlePasswordSave = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (newPassword.length < 8) {
+      setProfileMessage({ text: 'Use at least 8 characters for the new password.', type: 'error' });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setProfileMessage({ text: 'New password and confirmation do not match.', type: 'error' });
+      return;
+    }
+    setSavingPassword(true);
+    setProfileMessage(null);
+    try {
+      const nextProfile = await api.updatePassword(currentPassword, newPassword);
+      setProfile(nextProfile);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setProfileMessage({ text: 'Password updated successfully.', type: 'success' });
+    } catch (error) {
+      setProfileMessage({ text: error instanceof Error ? error.message : 'Could not update password.', type: 'error' });
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
   return (
     <Layout title="Settings" subtitle="Manage your preferences">
       <div className="settings-page max-w-3xl space-y-6">
+        <section id="profile" className="card profile-security-card animate-fade-in">
+          <div className="profile-security-heading">
+            <div className="profile-avatar" aria-hidden="true">{(profile?.displayName || 'P').slice(0, 1).toUpperCase()}</div>
+            <div>
+              <p className="section-title">Profile & security</p>
+              <h2>{profile?.displayName || 'Your profile'}</h2>
+              <span>Manage your identity and account password.</span>
+            </div>
+          </div>
+
+          {profile?.usingDefaultPassword && (
+            <div className="profile-security-warning" role="status">
+              <AlertCircleIcon className="icon-sm" />
+              <span>Your starter password is still active. Change it before continuing to use this profile.</span>
+            </div>
+          )}
+
+          <form className="profile-name-form" onSubmit={handleProfileSave}>
+            <label className="profile-field">
+              <span><UserIcon className="icon-sm" /> Display name</span>
+              <input className="input" value={displayName} maxLength={60} onChange={event => setDisplayName(event.target.value)} disabled={!profile || savingProfile} />
+            </label>
+            <button className="btn-primary profile-save-button" type="submit" disabled={!profile || savingProfile}>{savingProfile ? 'Saving…' : 'Save profile'}</button>
+          </form>
+
+          <div className="profile-password-section">
+            <div className="profile-password-heading">
+              <span className="profile-password-icon"><ShieldIcon className="icon" /></span>
+              <div><h3>Password</h3><p>Use at least 8 characters. Your password is securely stored as a hash.</p></div>
+            </div>
+            <form className="profile-password-form" onSubmit={handlePasswordSave}>
+              <label className="profile-field">
+                <span><LockIcon className="icon-sm" /> Current password</span>
+                <input className="input" type="password" autoComplete="current-password" value={currentPassword} onChange={event => setCurrentPassword(event.target.value)} disabled={!profile || savingPassword} required />
+              </label>
+              <label className="profile-field">
+                <span>New password</span>
+                <input className="input" type="password" autoComplete="new-password" minLength={8} maxLength={128} value={newPassword} onChange={event => setNewPassword(event.target.value)} disabled={!profile || savingPassword} required />
+              </label>
+              <label className="profile-field">
+                <span>Confirm new password</span>
+                <input className="input" type="password" autoComplete="new-password" minLength={8} maxLength={128} value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} disabled={!profile || savingPassword} required />
+              </label>
+              <button className="btn-secondary profile-save-button" type="submit" disabled={!profile || savingPassword}>{savingPassword ? 'Updating…' : 'Update password'}</button>
+            </form>
+          </div>
+
+          {profileMessage && <p className={`profile-message is-${profileMessage.type}`} role="status">{profileMessage.text}</p>}
+        </section>
+
         {settingsSections.map(section => (
           <div key={section.title} className="card settings-card overflow-hidden animate-fade-in">
             <div className="px-5 py-4 border-b bg-bg/50">

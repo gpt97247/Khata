@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import express from 'express';
 import mongoose from 'mongoose';
+import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 
 dotenv.config({ path: new URL('./.env', import.meta.url) });
 
@@ -10,6 +11,7 @@ const port = Number(process.env.PORT || 4000);
 const mongoUri = process.env.MONGODB_URI;
 const apiToken = process.env.API_TOKEN;
 const clientOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173';
+const defaultProfilePassword = '12345678';
 
 const defaultCategories = [
   { id: 'food', name: 'Food & Dining', icon: '🍔', color: '#EF4444' },
@@ -68,10 +70,19 @@ const userStateSchema = new mongoose.Schema({
   defaultsSeeded: { type: Boolean, default: true },
 }, commonOptions);
 
+const profileSchema = new mongoose.Schema({
+  userId: { type: String, required: true, unique: true },
+  displayName: { type: String, required: true, trim: true, maxlength: 60 },
+  passwordHash: { type: String, required: true, select: false },
+  passwordSalt: { type: String, required: true, select: false },
+  passwordUpdatedAt: { type: String, required: true },
+}, commonOptions);
+
 const Expense = mongoose.model('Expense', expenseSchema);
 const Category = mongoose.model('Category', categorySchema);
 const Tag = mongoose.model('Tag', tagSchema);
 const UserState = mongoose.model('UserState', userStateSchema);
+const Profile = mongoose.model('Profile', profileSchema);
 
 app.use(cors({ origin: clientOrigin }));
 app.use(express.json({ limit: '100kb' }));
@@ -88,6 +99,64 @@ const publicFields = (document) => Object.fromEntries(
   Object.entries(document).filter(([key]) => !['_id', 'userId', 'updatedAt'].includes(key)),
 );
 const getId = (req) => String(req.params.id || '').trim();
+
+function defaultDisplayName(userId) {
+  if (userId === 'default') return 'My profile';
+  return userId.replace(/[-_]+/g, ' ').trim().slice(0, 60) || 'My profile';
+}
+
+function passwordCredentials(password) {
+  const passwordSalt = randomBytes(16).toString('hex');
+  const passwordHash = scryptSync(password, passwordSalt, 64).toString('hex');
+  return { passwordSalt, passwordHash };
+}
+
+function matchesPassword(password, profile) {
+  if (!profile.passwordHash || !profile.passwordSalt) return false;
+  const expected = Buffer.from(profile.passwordHash, 'hex');
+  const received = scryptSync(password, profile.passwordSalt, 64);
+  return expected.length === received.length && timingSafeEqual(expected, received);
+}
+
+function publicProfile(profile) {
+  return {
+    displayName: profile.displayName,
+    passwordUpdatedAt: profile.passwordUpdatedAt,
+    usingDefaultPassword: matchesPassword(defaultProfilePassword, profile),
+  };
+}
+
+async function ensureProfile(userId) {
+  let profile = await Profile.findOne({ userId }).select('+passwordHash +passwordSalt');
+  if (!profile) {
+    const credentials = passwordCredentials(defaultProfilePassword);
+    profile = await Profile.create({
+      userId,
+      displayName: defaultDisplayName(userId),
+      ...credentials,
+      passwordUpdatedAt: new Date().toISOString(),
+    });
+  } else if (!profile.passwordHash || !profile.passwordSalt) {
+    const credentials = passwordCredentials(defaultProfilePassword);
+    profile.passwordHash = credentials.passwordHash;
+    profile.passwordSalt = credentials.passwordSalt;
+    profile.passwordUpdatedAt = new Date().toISOString();
+    await profile.save();
+  }
+  return profile;
+}
+
+async function migrateProfiles() {
+  const sources = await Promise.all([
+    Expense.distinct('userId'),
+    Category.distinct('userId'),
+    Tag.distinct('userId'),
+    UserState.distinct('userId'),
+    Profile.distinct('userId'),
+  ]);
+  const userIds = [...new Set(sources.flat().map(String).filter(Boolean))];
+  await Promise.all(userIds.map(userId => ensureProfile(userId)));
+}
 
 async function ensureDefaults(userId) {
   const existingState = await UserState.findOne({ userId }).lean();
@@ -128,6 +197,46 @@ app.get('/api/bootstrap', async (req, res, next) => {
       categories: categories.map(publicFields),
       tags: tags.map(publicFields),
     });
+  } catch (error) { next(error); }
+});
+
+app.get('/api/profile', async (req, res, next) => {
+  try {
+    const profile = await ensureProfile(req.userId);
+    res.json(publicProfile(profile));
+  } catch (error) { next(error); }
+});
+
+app.put('/api/profile', async (req, res, next) => {
+  try {
+    const displayName = String(req.body?.displayName || '').trim();
+    if (!displayName || displayName.length > 60) {
+      return res.status(400).json({ message: 'Display name must be between 1 and 60 characters' });
+    }
+    const profile = await ensureProfile(req.userId);
+    profile.displayName = displayName;
+    await profile.save();
+    res.json(publicProfile(profile));
+  } catch (error) { next(error); }
+});
+
+app.put('/api/profile/password', async (req, res, next) => {
+  try {
+    const currentPassword = String(req.body?.currentPassword || '');
+    const newPassword = String(req.body?.newPassword || '');
+    if (newPassword.length < 8 || newPassword.length > 128) {
+      return res.status(400).json({ message: 'Password must be between 8 and 128 characters' });
+    }
+    const profile = await ensureProfile(req.userId);
+    if (!matchesPassword(currentPassword, profile)) {
+      return res.status(403).json({ message: 'Current password is incorrect' });
+    }
+    const credentials = passwordCredentials(newPassword);
+    profile.passwordHash = credentials.passwordHash;
+    profile.passwordSalt = credentials.passwordSalt;
+    profile.passwordUpdatedAt = new Date().toISOString();
+    await profile.save();
+    res.json(publicProfile(profile));
   } catch (error) { next(error); }
 });
 
@@ -220,9 +329,12 @@ if (!mongoUri) {
 }
 
 mongoose.connect(mongoUri)
-  .then(() => app.listen(port, '0.0.0.0', () => {
-    console.log(`Khata API listening on port ${port}`);
-  }))
+  .then(async () => {
+    await migrateProfiles();
+    app.listen(port, '0.0.0.0', () => {
+      console.log(`Khata API listening on port ${port}`);
+    });
+  })
   .catch(error => {
     console.error('Could not connect to MongoDB:', error.message);
     process.exit(1);

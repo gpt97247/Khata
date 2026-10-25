@@ -1,4 +1,4 @@
-import type { Category, Expense, Tag } from '../types';
+import type { Category, Expense, Tag, UserProfile } from '../types';
 
 type BootstrapData = {
   expenses: Expense[];
@@ -33,6 +33,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 export const api = {
   getBootstrap: () => request<BootstrapData>('/bootstrap'),
+  getProfile: () => request<UserProfile>('/profile'),
+  updateProfile: (displayName: string) => request<UserProfile>('/profile', { method: 'PUT', body: JSON.stringify({ displayName }) }),
+  updatePassword: (currentPassword: string, newPassword: string) => request<UserProfile>('/profile/password', { method: 'PUT', body: JSON.stringify({ currentPassword, newPassword }) }),
   createExpense: (expense: Expense) => request<Expense>('/expenses', { method: 'POST', body: JSON.stringify(expense) }),
   updateExpense: (expense: Expense) => request<Expense>(`/expenses/${encodeURIComponent(expense.id)}`, { method: 'PUT', body: JSON.stringify(expense) }),
   deleteExpense: (id: string) => request<void>(`/expenses/${encodeURIComponent(id)}`, { method: 'DELETE' }),

@@ -30,3 +30,9 @@ export interface MonthlySummary {
   byTag: Record<string, number>;
   dailyTotals: Record<string, number>;
 }
+
+export interface UserProfile {
+  displayName: string;
+  passwordUpdatedAt: string;
+  usingDefaultPassword: boolean;
+}
