@@ -13,22 +13,25 @@ interface LayoutProps {
 
 export function Layout({ title, subtitle, headerActions, children }: LayoutProps) {
   const [showQuickAdd, setShowQuickAdd] = useState(false);
-  const { categories, tags } = useKhata();
+  const { categories, tags, isDataReady } = useKhata();
 
   useEffect(() => {
-    const openQuickAdd = () => setShowQuickAdd(true);
+    const openQuickAdd = () => {
+      if (isDataReady) setShowQuickAdd(true);
+    };
     window.addEventListener('khata:quick-add', openQuickAdd);
     return () => window.removeEventListener('khata:quick-add', openQuickAdd);
-  }, []);
+  }, [isDataReady]);
 
   return (
     <div className="app-shell flex min-h-screen bg-bg">
-      <Sidebar onQuickAdd={() => setShowQuickAdd(true)} />
+      <Sidebar isDataReady={isDataReady} onQuickAdd={() => setShowQuickAdd(true)} />
       <main className="main-content">
         <Header
           title={title}
           subtitle={subtitle}
           actions={headerActions}
+          isDataReady={isDataReady}
         />
         <div className={`page-content page-${title.toLowerCase().replace(/\s+/g, '-')}`}>
           {children}

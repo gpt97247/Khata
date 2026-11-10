@@ -12,7 +12,7 @@ import {
 } from '../components/Icons';
 
 export function Expenses() {
-  const { expenses, categories, tags, removeExpense } = useKhata();
+  const { expenses, categories, tags, removeExpense, isDataReady } = useKhata();
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | 'all'>('all');
   const [selectedTag, setSelectedTag] = useState<string | 'all'>('all');
@@ -122,9 +122,9 @@ export function Expenses() {
               {hasActiveFilters && <span className="badge badge-primary ml-1">{[search, selectedCategory !== 'all', selectedTag !== 'all', dateRange.start, dateRange.end].filter(Boolean).length}</span>}
             </button>
 
-            <button className="btn-primary" onClick={() => setShowAddModal(true)}>
+            <button className="btn-primary" onClick={() => setShowAddModal(true)} disabled={!isDataReady} title={isDataReady ? 'Add expense' : 'Loading your data…'}>
               <PlusIcon className="icon-sm" />
-              <span className="hidden sm:inline">Add Expense</span>
+              <span className="hidden sm:inline">{isDataReady ? 'Add Expense' : 'Loading data…'}</span>
             </button>
           </div>
         </div>
@@ -191,7 +191,7 @@ export function Expenses() {
             <p className="empty-state-text">
               {hasActiveFilters ? 'Try adjusting your filters or search terms' : 'Start tracking your expenses by adding your first transaction'}
             </p>
-            <button className="btn-primary mt-4" onClick={() => setShowAddModal(true)}>
+            <button className="btn-primary mt-4" onClick={() => setShowAddModal(true)} disabled={!isDataReady} title={isDataReady ? 'Add expense' : 'Loading your data…'}>
               <PlusIcon className="icon-sm" /> Add Expense
             </button>
           </div>

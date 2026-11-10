@@ -6,9 +6,10 @@ interface HeaderProps {
   title: string;
   subtitle?: string;
   actions?: React.ReactNode;
+  isDataReady: boolean;
 }
 
-export function Header({ title, subtitle, actions }: HeaderProps) {
+export function Header({ title, subtitle, actions, isDataReady }: HeaderProps) {
   const [darkMode, setDarkMode] = useState(isDarkTheme);
 
   useEffect(() => {
@@ -41,9 +42,15 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
         >
           {darkMode ? <SunIcon className="icon" /> : <MoonIcon className="icon" />}
         </button>
-        <button type="button" className="app-header__add" onClick={() => window.dispatchEvent(new Event('khata:quick-add'))}>
+        <button
+          type="button"
+          className="app-header__add"
+          onClick={() => window.dispatchEvent(new Event('khata:quick-add'))}
+          disabled={!isDataReady}
+          title={isDataReady ? 'Add transaction' : 'Loading your data…'}
+        >
           <PlusIcon className="icon-sm" />
-          <span>Add transaction</span>
+          <span>{isDataReady ? 'Add transaction' : 'Loading data…'}</span>
         </button>
       </div>
     </header>

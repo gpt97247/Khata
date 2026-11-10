@@ -12,6 +12,7 @@ interface KhataContextType {
   expenses: Expense[];
   categories: Category[];
   tags: Tag[];
+  isDataReady: boolean;
   addExpense: (expense: Omit<Expense, 'id' | 'createdAt'>) => Promise<void>;
   removeExpense: (id: string) => Promise<void>;
   editExpense: (expense: Expense) => Promise<void>;
@@ -36,6 +37,7 @@ export function KhataProvider({ children }: { children: ReactNode }) {
   const categoriesRef = useRef(categories);
   const tagsRef = useRef(tags);
   const mutationVersion = useRef(0);
+  const [isDataReady, setIsDataReady] = useState(false);
 
   const commitExpenses = (next: Expense[]) => {
     expensesRef.current = next;
@@ -62,11 +64,31 @@ export function KhataProvider({ children }: { children: ReactNode }) {
       // Do not overwrite an add/edit/delete that happened while the request was
       // in flight. This was the source of values disappearing after a refresh.
       if (mutationVersion.current !== versionAtStart) return;
-      commitExpenses(cloudData.expenses);
-      commitCategories(cloudData.categories);
-      commitTags(cloudData.tags);
+
+      // Keep entries that were saved locally while the API was unavailable.
+      // The cloud response remains first so its ordering is preserved, while
+      // local-only records are retried in the background on this device.
+      const mergeById = <T extends { id: string }>(cloud: T[], local: T[]) => [
+        ...cloud,
+        ...local.filter(item => !cloud.some(remote => remote.id === item.id)),
+      ];
+      const localOnlyExpenses = expensesRef.current.filter(item => !cloudData.expenses.some(remote => remote.id === item.id));
+      const localOnlyCategories = categoriesRef.current.filter(item => !cloudData.categories.some(remote => remote.id === item.id));
+      const localOnlyTags = tagsRef.current.filter(item => !cloudData.tags.some(remote => remote.id === item.id));
+
+      commitExpenses(mergeById(cloudData.expenses, expensesRef.current));
+      commitCategories(mergeById(cloudData.categories, categoriesRef.current));
+      commitTags(mergeById(cloudData.tags, tagsRef.current));
+
+      void Promise.all([
+        ...localOnlyExpenses.map(api.createExpense),
+        ...localOnlyCategories.map(api.createCategory),
+        ...localOnlyTags.map(api.createTag),
+      ]).catch(() => undefined);
     } catch {
       // The local copy already rendered above and remains the offline fallback.
+    } finally {
+      setIsDataReady(true);
     }
   };
 
@@ -163,6 +185,7 @@ export function KhataProvider({ children }: { children: ReactNode }) {
       expenses,
       categories,
       tags,
+      isDataReady,
       addExpense: handleAddExpense,
       removeExpense: handleRemoveExpense,
       editExpense: handleEditExpense,

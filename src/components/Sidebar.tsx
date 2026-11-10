@@ -42,9 +42,10 @@ const navItems = [
 
 interface SidebarProps {
   onQuickAdd: () => void;
+  isDataReady: boolean;
 }
 
-export function Sidebar({ onQuickAdd }: SidebarProps) {
+export function Sidebar({ onQuickAdd, isDataReady }: SidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const closeMobileMenu = () => setMobileOpen(false);
@@ -103,9 +104,15 @@ export function Sidebar({ onQuickAdd }: SidebarProps) {
         </nav>
 
         <div className="app-sidebar__footer">
-          <button type="button" className="app-sidebar__quick-add" onClick={() => { onQuickAdd(); closeMobileMenu(); }}>
+          <button
+            type="button"
+            className="app-sidebar__quick-add"
+            onClick={() => { onQuickAdd(); closeMobileMenu(); }}
+            disabled={!isDataReady}
+            title={isDataReady ? 'Add transaction' : 'Loading your data…'}
+          >
             <PlusIcon className="icon" />
-            <span>Add transaction</span>
+            <span>{isDataReady ? 'Add transaction' : 'Loading data…'}</span>
           </button>
           <p className="app-sidebar__sync"><span />Changes saved</p>
         </div>
