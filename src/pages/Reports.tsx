@@ -4,7 +4,7 @@ import { useKhata } from '../context/useKhata';
 import { Layout } from '../components/Layout';
 import { formatDate, formatMonth, getDateKey, getMonthKey, getMonthRange } from '../utils/date';
 import { isCredit, spendingAmount, totalAmountLabel } from '../utils/transactions';
-import { ArrowRightIcon, BarChartIcon, CalendarIcon, DownloadIcon, PieChartIcon, ReceiptIcon, TrendingUpIcon } from '../components/Icons';
+import { ArrowDownIcon, ArrowRightIcon, BarChartIcon, CalendarIcon, DownloadIcon, PieChartIcon, ReceiptIcon, TrendingUpIcon } from '../components/Icons';
 
 type ReportPeriod = 'all' | 'custom' | string;
 
@@ -118,6 +118,14 @@ function formatRangeDate(date: string): string {
   });
 }
 
+function inclusiveDayCount(startDate: string, endDate: string): number {
+  const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
+  const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
+  const start = Date.UTC(startYear, startMonth - 1, startDay);
+  const end = Date.UTC(endYear, endMonth - 1, endDay);
+  return Math.max(1, Math.floor((end - start) / 86_400_000) + 1);
+}
+
 export function Reports() {
   const { expenses, categories, tags } = useKhata();
   const currentMonth = getMonthKey(new Date());
@@ -192,6 +200,23 @@ export function Reports() {
     .filter(isCredit)
     .reduce((sum, expense) => sum + expense.amount, 0);
   const netTotal = reportExpenses.reduce((sum, expense) => sum + spendingAmount(expense), 0);
+  const reportDayCount = useMemo(() => {
+    if (isCustomView) {
+      return hasValidCustomRange ? inclusiveDayCount(customStartDate, customEndDate) : 1;
+    }
+
+    if (isMonthlyView) {
+      const { end } = getMonthRange(selectedPeriod);
+      const periodEnd = selectedPeriod === currentMonth ? today : getDateKey(end);
+      return inclusiveDayCount(`${selectedPeriod}-01`, periodEnd);
+    }
+
+    const earliestEntryDate = reportExpenses
+      .map(expense => expense.date.split('T')[0])
+      .sort()[0];
+    return earliestEntryDate ? inclusiveDayCount(earliestEntryDate, today) : 1;
+  }, [currentMonth, customEndDate, customStartDate, hasValidCustomRange, isCustomView, isMonthlyView, reportExpenses, selectedPeriod, today]);
+  const averageNetPerDay = netTotal / reportDayCount;
 
   const categorySlices = useMemo(() => {
     const totals: Record<string, number> = {};
@@ -359,7 +384,7 @@ export function Reports() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="report-summary-grid gap-4 mb-6">
         <div className="stat-card group">
           <div className="flex items-center justify-between">
             <div><p className="text-xs font-medium text-muted uppercase tracking-wide">Net total</p><p className="text-2xl font-bold mt-1">{totalAmountLabel(netTotal)}</p></div>
@@ -376,6 +401,16 @@ export function Reports() {
           <div className="flex items-center justify-between">
             <div><p className="text-xs font-medium text-muted uppercase tracking-wide">Credits</p><p className="text-2xl font-bold mt-1 text-success">+{formatRupees(creditTotal)}</p></div>
             <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'var(--success)20' }}><TrendingUpIcon className="icon" style={{ color: 'var(--success)' }} /></div>
+          </div>
+        </div>
+        <div className="stat-card group">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-muted uppercase tracking-wide">Average net / day</p>
+              <p className="text-2xl font-bold mt-1">{totalAmountLabel(averageNetPerDay)}</p>
+              <p className="text-xs text-muted mt-1">Across {reportDayCount} {reportDayCount === 1 ? 'day' : 'days'}</p>
+            </div>
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'var(--primary)20' }}><ArrowDownIcon className="icon" style={{ color: 'var(--primary)' }} /></div>
           </div>
         </div>
         <div className="stat-card group">
